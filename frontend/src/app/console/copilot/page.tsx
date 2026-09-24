@@ -25,7 +25,7 @@ export default function CopilotPage(){
   <div className="copilot-workspace">
    <section className="copilot-command console-panel">
     <div className="panel-header"><div><span>SELECTED INCIDENT</span><h2>{incident.title}</h2></div><ShieldAlert size={18}/></div>
-    <div className="copilot-evidence-strip"><span>{incident.asset_id}</span><span>{incident.severity}</span><span>{incident.correlation_id.slice(0,8)}</span></div>
+    <div className="copilot-evidence-strip"><span>{incident.asset_id}</span><span>{incident.severity}</span><span>{incident.incident_id.slice(0,8)}</span></div>
     <button className="approve-button" disabled={busy} onClick={run}><Send size={15}/>{busy?"Analyzing supplied evidence…":"Analyze with evidence-grounded copilot"}</button>
     {error&&<div className="error-banner"><CircleAlert size={14}/>{error}</div>}
    </section>
