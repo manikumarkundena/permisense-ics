@@ -9,7 +9,7 @@ import type { Incident } from "@/types/industrial";
 
 type CopilotResult = { incident_id: string; grounded: boolean; copilot: { summary: string; evidence: string[] | string; impact: string; recommended_action: string; confidence_note: string; } };
 type ChatResult = { incident_id: string; grounded: boolean; question: string; copilot: { answer: string; evidence_used: string[] | string; action_advisory: string; limitation: string; } };
-type Message = { role: "operator" | "copilot"; text: string; evidence?: string };
+type Message = { role: "operator" | "copilot"; text: string; evidence?: string[]; advisory?: string; limitation?: string };
 
 function incidentTitle(incident: Incident) {
   const register = Number(incident.control?.register_address);
@@ -64,8 +64,14 @@ export default function CopilotPage() {
     setMessages((current) => [...current, { role:"operator", text:trimmed }]);
     try {
       const response = await api<ChatResult>("/api/incidents/"+incident.incident_id+"/copilot/chat", { method:"POST", body:JSON.stringify({ question:trimmed }) });
-      const evidence = Array.isArray(response.copilot.evidence_used) ? response.copilot.evidence_used.join(" · ") : response.copilot.evidence_used;
-      setMessages((current) => [...current, { role:"copilot", text:response.copilot.answer, evidence:evidence + (response.copilot.action_advisory ? " · "+response.copilot.action_advisory : "") }]);
+      const evidence = Array.isArray(response.copilot.evidence_used) ? response.copilot.evidence_used : [response.copilot.evidence_used];
+      setMessages((current) => [...current, {
+        role:"copilot",
+        text:response.copilot.answer,
+        evidence:evidence.filter(Boolean),
+        advisory:response.copilot.action_advisory,
+        limitation:response.copilot.limitation,
+      }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Copilot chat failed");
     } finally { setBusy(false); }
@@ -112,7 +118,13 @@ export default function CopilotPage() {
           {!messages.length && <div className="empty-state"><Bot size={24}/><strong>Ask a grounded question</strong><p>For example: “What evidence proves the process was affected?”</p></div>}
           {messages.map((message,index) => <div className={"chat-message "+message.role} key={index}>
             <div className="chat-avatar">{message.role==="operator" ? <UserRound size={14}/> : <Bot size={14}/>}</div>
-            <div><span>{message.role==="operator" ? "OPERATOR" : "COPILOT"}</span><p>{message.text}</p>{message.evidence && <small>EVIDENCE · {message.evidence}</small>}</div>
+            <div>
+              <span>{message.role==="operator" ? "OPERATOR" : "COPILOT"}</span>
+              <p>{message.text}</p>
+              {message.evidence?.length ? <div className="chat-evidence"><small>EVIDENCE USED</small>{message.evidence.map((item,i) => <div key={i}>{item}</div>)}</div> : null}
+              {message.advisory ? <div className="chat-boundary"><small>ACTION ADVISORY</small>{message.advisory}</div> : null}
+              {message.limitation ? <div className="chat-boundary"><small>LIMITATION</small>{message.limitation}</div> : null}
+            </div>
           </div>)}
         </div>
         <form className="chat-input-row" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
