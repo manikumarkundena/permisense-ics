@@ -13,13 +13,24 @@ export default function ResponsePage() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [selectedIncidentId, setSelectedIncidentId] = useState("");
   const { correlationVersion } = useLiveEvents();
 
-  const incident = incidents[0];
+  const incident =
+    incidents.find((item) => item.incident_id === selectedIncidentId) ??
+    incidents[0] ??
+    null;
 
   const loadIncidents = () =>
     api<{ count: number; incidents: Incident[] }>("/api/incidents")
-      .then((result) => setIncidents(result.incidents))
+      .then((result) => {
+        setIncidents(result.incidents);
+        setSelectedIncidentId((current) =>
+          current && result.incidents.some((item) => item.incident_id === current)
+            ? current
+            : result.incidents[0]?.incident_id ?? "",
+        );
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load incidents"));
 
   const loadPlan = (incidentId: string) =>
@@ -123,6 +134,28 @@ export default function ResponsePage() {
       </div>
 
       {error && <div className="error-banner"><AlertTriangle size={15}/>{error}</div>}
+
+      {incidents.length > 0 && (
+        <div className="response-incident-selector">
+          <div>
+            <span>INCIDENT CONTEXT</span>
+            <strong>Select the incident whose response you are authorizing.</strong>
+          </div>
+          <div className="response-incident-list">
+            {incidents.map((item) => (
+              <button
+                key={item.incident_id}
+                className={item.incident_id === incident?.incident_id ? "selected" : ""}
+                onClick={() => setSelectedIncidentId(item.incident_id)}
+              >
+                <span>{item.incident_id.slice(0, 8)}</span>
+                <strong>{item.title}</strong>
+                <small>{item.asset_id} · {item.status ?? "open"}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!incident || !plan ? (
         <div className="empty-state large">
