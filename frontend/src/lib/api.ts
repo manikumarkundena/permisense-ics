@@ -8,7 +8,14 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    throw new Error(`API ${response.status}: ${body || response.statusText}`);
+    let detail = body || response.statusText;
+    try {
+      const parsed = JSON.parse(body);
+      detail = typeof parsed?.detail === "string" ? parsed.detail : parsed?.detail ? JSON.stringify(parsed.detail) : detail;
+    } catch {
+      // Preserve non-JSON upstream errors as returned.
+    }
+    throw new Error(`API ${response.status}: ${detail}`);
   }
   return response.json() as Promise<T>;
 }
