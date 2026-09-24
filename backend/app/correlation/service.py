@@ -14,6 +14,7 @@ def evaluate_correlation(
     control_event: TelemetryEvent,
     process_events: list[TelemetryEvent],
     detection_ids: list[str] | None = None,
+    detection_details: list[dict] | None = None,
 ) -> CorrelationResult | None:
     result = correlate_control_to_process(
         control_event,
@@ -53,6 +54,7 @@ def evaluate_correlation(
         control_event_id=control_event.event_id,
         process_event_ids=[event.event_id for event in process_events],
         detection_ids=detection_ids or [],
+        detection_details=detection_details,
         mitre_mappings=mitre_mappings,
         impact=impact_dict,
         risk=risk_dict,
@@ -77,6 +79,7 @@ def evaluate_correlation(
             }
             for event in process_events
         ],
+        "detections": detection_details or [],
         "mitre_mappings": mitre_mappings,
         "impact": impact_dict,
         "risk": risk_dict,
