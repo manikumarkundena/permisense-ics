@@ -40,18 +40,11 @@ async def list_incidents(
         .order_by(Correlation.timestamp.desc())
         .limit(100)
     )
+    incidents = list(result.scalars().all())
+
     return {
-        "count": len(result.scalars().all()),
-        "incidents": [
-            _incident(c)
-            for c in (
-                await session.execute(
-                    select(Correlation)
-                    .order_by(Correlation.timestamp.desc())
-                    .limit(100)
-                )
-            ).scalars().all()
-        ],
+        "count": len(incidents),
+        "incidents": [_incident(c) for c in incidents],
     }
 
 
@@ -79,7 +72,14 @@ async def update_incident_status(
     payload: dict,
     session: AsyncSession = Depends(get_db),
 ):
-    allowed = {"open", "investigating", "action_pending", "responded", "recovered", "closed"}
+    allowed = {
+        "open",
+        "investigating",
+        "action_pending",
+        "responded",
+        "recovered",
+        "closed",
+    }
     new_status = payload.get("status")
 
     if new_status not in allowed:
