@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CheckCircle2, CircleAlert, Send, ShieldAlert, UserRound, WifiOff } from "lucide-react";
+import { Bot, CheckCircle2, CircleAlert, Send, ShieldAlert, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ConsoleShell } from "@/components/console-shell";
 import { api } from "@/lib/api";
