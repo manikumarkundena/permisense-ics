@@ -12,6 +12,7 @@ from app.api.incidents import router as incidents_router
 from app.api.response import router as response_router
 from app.api.copilot import router as copilot_router
 from app.api.live import router as live_router
+from app.api.demo import router as demo_router
 
 
 app = FastAPI(
@@ -42,6 +43,7 @@ app.include_router(incidents_router)
 app.include_router(response_router)
 app.include_router(copilot_router)
 app.include_router(live_router)
+app.include_router(demo_router)
 
 
 async def database_ready() -> bool:
