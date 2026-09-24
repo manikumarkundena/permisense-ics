@@ -1217,3 +1217,52 @@ button { font: inherit; }
 .graph-record strong { display:block; margin-top:5px; font-size:10px; overflow-wrap:anywhere; }
 .graph-relation small { display:block; margin-top:5px; color:var(--muted); font:8px var(--font-geist-mono); overflow-wrap:anywhere; }
 @media(max-width:900px){ .graph-evidence-grid{grid-template-columns:1fr} }
+
+.copilot-actions { display:flex; align-items:center; gap:10px; margin-top:16px; }
+.copilot-actions .approve-button { flex:1; margin-top:0; }
+.copilot-actions > span { color:var(--subtle); font:8px var(--font-geist-mono); }
+.copilot-chat { min-height:420px; margin-top:9px; }
+.chat-grounded { margin-top:18px; }
+.chat-suggestions { display:flex; flex-wrap:wrap; gap:7px; margin:15px 0; }
+.chat-suggestions button {
+  max-width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:7px;
+  background:var(--surface-2); color:var(--muted); cursor:pointer; font-size:9px; text-align:left;
+}
+.chat-suggestions button:hover:not(:disabled) { border-color:var(--accent); color:var(--text); }
+.chat-suggestions button:disabled { opacity:.5; cursor:not-allowed; }
+.chat-thread {
+  min-height:220px; max-height:520px; overflow:auto; padding:10px;
+  border:1px solid var(--line); border-radius:9px; background:rgba(0,0,0,.08);
+}
+.chat-message { display:flex; gap:10px; max-width:88%; margin:8px 0; }
+.chat-message.operator { margin-left:auto; flex-direction:row-reverse; }
+.chat-avatar {
+  flex:0 0 29px; width:29px; height:29px; display:grid; place-items:center;
+  border:1px solid var(--line); border-radius:8px; background:var(--surface-2); color:var(--accent);
+}
+.chat-message.operator .chat-avatar { color:var(--muted); }
+.chat-message > div:last-child {
+  min-width:0; padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface);
+}
+.chat-message.operator > div:last-child { background:var(--accent-soft); border-color:color-mix(in srgb,var(--accent) 25%,var(--line)); }
+.chat-message span { display:block; color:var(--subtle); font:800 7px var(--font-geist-mono); letter-spacing:.1em; }
+.chat-message p { margin:5px 0 0; color:var(--text); font-size:10px; line-height:1.65; overflow-wrap:anywhere; }
+.chat-message small { display:block; margin-top:8px; color:var(--subtle); font:8px var(--font-geist-mono); line-height:1.5; overflow-wrap:anywhere; }
+.chat-input-row { display:flex; gap:8px; margin-top:10px; }
+.chat-input-row input {
+  min-width:0; flex:1; height:42px; padding:0 12px; border:1px solid var(--line-strong);
+  border-radius:8px; outline:none; background:var(--surface-2); color:var(--text); font-size:10px;
+}
+.chat-input-row input:focus { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent); }
+.chat-input-row button {
+  flex:0 0 auto; display:flex; align-items:center; gap:6px; height:42px; padding:0 14px;
+  border:1px solid var(--accent); border-radius:8px; background:var(--accent); color:#06111d;
+  cursor:pointer; font-size:10px; font-weight:800;
+}
+.chat-input-row button:disabled { opacity:.45; cursor:not-allowed; }
+@media(max-width:620px) {
+  .copilot-actions { flex-direction:column; align-items:stretch; }
+  .chat-message { max-width:96%; }
+  .chat-input-row { flex-direction:column; }
+  .chat-input-row button { justify-content:center; }
+}
