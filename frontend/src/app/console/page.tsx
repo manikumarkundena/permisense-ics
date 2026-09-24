@@ -13,7 +13,7 @@ export default function ConsolePage() {
   const {events,state}=useLiveEvents();
   const [status,setStatus]=useState<SystemStatus|null>(null);
   const [incidents,setIncidents]=useState<Incident[]>([]);
-  useEffect(()=>{api<SystemStatus>("/api/system/status").then(setStatus).catch(()=>{});api<Incident[]>("/api/incidents").then(setIncidents).catch(()=>{});},[]);
+  useEffect(()=>{api<SystemStatus>("/api/system/status").then(setStatus).catch(()=>{});api<{count:number;incidents:Incident[]}>("/api/incidents").then(r=>setIncidents(r.incidents)).catch(()=>{});},[]);
 
   const latest=events[0];
   return <ConsoleShell>
@@ -70,7 +70,7 @@ export default function ConsolePage() {
       </section>
       <section className="console-panel">
         <div className="panel-header"><div><span>RECENT INCIDENTS</span><h2>Investigation queue</h2></div><AlertTriangle size={18}/></div>
-        {incidents.slice(0,4).map(i=><Link className="mini-incident" href={`/console/incidents/${i.correlation_id}`} key={i.correlation_id}><span className={`incident-severity severity-${i.severity.toLowerCase()}`}>{i.severity}</span><div><strong>{i.title}</strong><small>{i.asset_id} · {new Date(i.timestamp).toLocaleTimeString()}</small></div><span>→</span></Link>)}
+        {incidents.slice(0,4).map(i=><Link className="mini-incident" href={`/console/incidents/${i.incident_id}`} key={i.correlation_id}><span className={`incident-severity severity-${i.severity.toLowerCase()}`}>{i.severity}</span><div><strong>{i.title}</strong><small>{i.asset_id} · {new Date(i.timestamp).toLocaleTimeString()}</small></div><span>→</span></Link>)}
         {!incidents.length&&<div className="empty-state"><CheckCircle2 size={26}/><strong>No incidents yet</strong><p>That's a real empty state. No synthetic alerts are inserted.</p></div>}
       </section>
     </div>
