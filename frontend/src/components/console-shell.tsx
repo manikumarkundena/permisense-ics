@@ -1,7 +1,17 @@
 import Link from "next/link";
-import { Activity, Bot, CircleAlert, LockKeyhole, Radio, ShieldCheck, UsersRound } from "lucide-react";
+import { Activity, Bot, CircleAlert, FlaskConical, LockKeyhole, Radio, ShieldCheck, UsersRound } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function ConsoleShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const navItems = [
+    { href: "/console", label: "Overview", icon: Radio },
+    { href: "/console/live", label: "Live telemetry", icon: Activity },
+    { href: "/console/incidents", label: "Incidents", icon: CircleAlert },
+    { href: "/console/response", label: "Response", icon: LockKeyhole },
+    { href: "/console/copilot", label: "Evidence copilot", icon: Bot },
+    { href: "/console/lab", label: "Demo lab", icon: FlaskConical },
+  ];
   return (
     <main className="console-page">
       <header className="console-header">
@@ -17,11 +27,10 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
       <div className="shell console-layout">
         <aside className="console-sidebar">
           <div className="console-sidebar-title">OPERATIONS</div>
-          <Link className="console-nav" href="/console"><Radio size={16}/> Overview</Link>
-          <Link className="console-nav" href="/console/live"><Activity size={16}/> Live telemetry</Link>
-          <Link className="console-nav" href="/console/incidents"><CircleAlert size={16}/> Incidents</Link>
-          <Link className="console-nav" href="/console/response"><LockKeyhole size={16}/> Response</Link>
-          <Link className="console-nav" href="/console/copilot"><Bot size={16}/> Evidence copilot</Link>
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = href === "/console" ? pathname === "/console" : pathname.startsWith(href);
+            return <Link key={href} className={"console-nav" + (active ? " active" : "")} href={href} aria-current={active ? "page" : undefined}><Icon size={16}/> {label}</Link>;
+          })}
 
           <div className="console-sidebar-title console-sidebar-lower">OPERATOR BOUNDARY</div>
           <div className="console-meta"><UsersRound size={13}/> Human approval required</div>
