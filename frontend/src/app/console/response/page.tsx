@@ -94,12 +94,14 @@ export default function ResponsePage() {
       await loadPlan(incident.incident_id);
       setMessage(
         result.recovered
-          ? "Recovery verified · actual speed " +
-            result.actual_speed.toFixed(1) +
-            " ≤ " +
-            result.threshold.toFixed(1)
-          : "Recovery not verified · actual speed " +
-            result.actual_speed.toFixed(1),
+          ? "Recovery verified · control readback " +
+            result.control_value.toFixed(1) +
+            " = target " +
+            result.target_value.toFixed(1)
+          : "Recovery not verified · control readback " +
+            result.control_value.toFixed(1) +
+            " ≠ target " +
+            result.target_value.toFixed(1),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Verification failed");
