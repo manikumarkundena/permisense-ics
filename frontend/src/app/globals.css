@@ -107,3 +107,7 @@ button,input,textarea{font:inherit}
 .error-banner{overflow-wrap:anywhere}
 .evidence-facts{min-width:0}
 .evidence-facts strong{overflow-wrap:anywhere}
+
+.chat-evidence{display:grid;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:8px;line-height:1.5}
+.chat-evidence>small,.chat-boundary>small{font:800 7px var(--font-geist-mono);letter-spacing:.08em;color:var(--subtle)}
+.chat-boundary{margin-top:7px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted);font-size:8px;line-height:1.5}
