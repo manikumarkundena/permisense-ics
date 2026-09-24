@@ -51,6 +51,26 @@ def test_control_write_correlates_with_process_deviation():
         control_event,
         [process_event],
         detection_ids=["det-control-001", "det-process-001"],
+        detection_details=[
+            {
+                "detection_id": "det-control-001",
+                "event_id": "evt-control-001",
+                "rule_id": "ICS-CONTROL-WRITE",
+                "severity": "high",
+                "title": "Industrial control write observed",
+                "reason": "A control value was written.",
+                "evidence": {},
+            },
+            {
+                "detection_id": "det-process-001",
+                "event_id": "evt-process-001",
+                "rule_id": "PROCESS-OVERSPEED",
+                "severity": "high",
+                "title": "Conveyor overspeed detected",
+                "reason": "Actual speed exceeded the threshold.",
+                "evidence": {},
+            },
+        ],
     )
 
     assert result is not None
@@ -88,6 +108,20 @@ def test_control_write_correlates_with_process_deviation():
     assert "mitre:T1692.001" in node_ids
     assert result.impact["impact_id"] in node_ids
     assert result.risk["risk_id"] in node_ids
+
+    detection_nodes = {
+        node["id"]: node
+        for node in graph["nodes"]
+        if node["type"] == "detection"
+    }
+    assert (
+        detection_nodes["det-control-001"]["label"]
+        == "ICS-CONTROL-WRITE: Industrial control write observed"
+    )
+    assert (
+        detection_nodes["det-process-001"]["label"]
+        == "PROCESS-OVERSPEED: Conveyor overspeed detected"
+    )
 
 
 def test_unrelated_asset_does_not_correlate():
