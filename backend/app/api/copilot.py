@@ -59,7 +59,13 @@ async def generate(prompt: str) -> dict:
         raise HTTPException(status_code=502, detail="Gemini upstream request failed. Check network access and Gemini availability.") from exc
 
     if response.is_error:
-        raise HTTPException(status_code=502, detail="Gemini request failed")
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "gemini_status": response.status_code,
+                "gemini_response": response.text[:2000],
+            },
+        )
 
     try:
         data = response.json()
