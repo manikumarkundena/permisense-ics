@@ -12,11 +12,11 @@ export default function CopilotPage(){
  const [incidents,setIncidents]=useState<Incident[]>([]);
  const [result,setResult]=useState<CopilotResult|null>(null);
  const [busy,setBusy]=useState(false); const [error,setError]=useState("");
- useEffect(()=>{api<Incident[]>("/api/incidents").then(setIncidents).catch(e=>setError(e.message));},[]);
+ useEffect(()=>{api<{count:number;incidents:Incident[]}>("/api/incidents").then(r=>setIncidents(r.incidents)).catch(e=>setError(e.message));},[]);
  const incident=incidents[0];
  async function run(){
   if(!incident)return;setBusy(true);setError("");
-  try{setResult(await api<CopilotResult>(`/api/incidents/${incident.correlation_id}/copilot`,{method:"POST"}));}
+  try{setResult(await api<CopilotResult>(`/api/incidents/${incident.incident_id}/copilot`,{method:"POST"}));}
   catch(e){setError(e instanceof Error?e.message:"Copilot request failed");}finally{setBusy(false);}
  }
  return <ConsoleShell>
