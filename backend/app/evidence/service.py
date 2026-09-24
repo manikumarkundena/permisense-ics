@@ -13,7 +13,9 @@ def build_evidence_graph(
     mitre_mappings: list[dict],
     impact: dict | None,
     risk: dict | None,
+    detection_details: list[dict] | None = None,
 ) -> EvidenceGraph:
+    """Build a traceable evidence graph for one correlated incident."""
     nodes: list[EvidenceNode] = [
         EvidenceNode(
             id=control_event_id,
@@ -40,12 +42,29 @@ def build_evidence_graph(
             )
         )
 
+    details_by_id = {
+        item["detection_id"]: item
+        for item in (detection_details or [])
+        if item.get("detection_id")
+    }
+
     for detection_id in detection_ids:
+        detail = details_by_id.get(detection_id, {})
+        rule_id = detail.get("rule_id")
+        title = detail.get("title")
+
+        label = (
+            f"{rule_id}: {title}"
+            if rule_id and title
+            else f"Detection: {detection_id[:8]}"
+        )
+
         nodes.append(
             EvidenceNode(
                 id=detection_id,
                 type="detection",
-                label="Detection",
+                label=label,
+                data=detail,
             )
         )
         edges.append(
