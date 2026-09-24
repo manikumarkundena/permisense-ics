@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-
+from app.api.live import broadcaster
 from app.correlation.repository import (
     correlation_already_exists,
     find_recent_control_events,
@@ -98,7 +98,7 @@ async def ingest_event(
                 }
             )
 
-    return {
+    response = {
         "status": "accepted",
         "event_id": saved_event.event_id,
         "timestamp": saved_event.timestamp,
@@ -113,3 +113,22 @@ async def ingest_event(
         ],
         "correlations": correlations,
     }
+
+    await broadcaster.publish({
+        "type": "telemetry",
+        "event": {
+            "event_id": saved_event.event_id,
+            "timestamp": saved_event.timestamp,
+            "event_type": saved_event.event_type,
+            "asset_id": saved_event.asset_id,
+            "process_id": saved_event.process_id,
+            "register_address": saved_event.register_address,
+            "value": saved_event.value,
+            "unit": saved_event.unit,
+            "severity": saved_event.severity,
+        },
+        "detections": response["detections"],
+        "correlations": response["correlations"],
+    })
+
+    return response
