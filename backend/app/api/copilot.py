@@ -56,7 +56,7 @@ async def generate(prompt: str) -> dict:
                 json=payload,
             )
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail="Gemini request failed") from exc
+        raise HTTPException(status_code=502, detail="Gemini upstream request failed. Check network access and Gemini availability.") from exc
 
     if response.is_error:
         raise HTTPException(status_code=502, detail="Gemini request failed")
