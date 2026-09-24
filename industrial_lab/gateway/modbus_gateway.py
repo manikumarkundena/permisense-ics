@@ -9,6 +9,7 @@ The gateway does NOT perform detection.
 
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -21,11 +22,15 @@ from industrial_lab.plc.registers import RegisterAddress
 logger = logging.getLogger("permisense.gateway")
 
 
-PLC_HOST = "127.0.0.1"
-PLC_PORT = 5020
+PLC_HOST = os.getenv("MODBUS_HOST", "127.0.0.1")
+PLC_PORT = int(os.getenv("MODBUS_PORT", "5020"))
 PLC_DEVICE_ID = 1
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+API_PORT = os.getenv("PORT", "8000")
+BACKEND_URL = os.getenv(
+    "BACKEND_URL",
+    f"http://127.0.0.1:{API_PORT}",
+).rstrip("/")
 
 POLL_INTERVAL = 1.0
 
