@@ -1,11 +1,21 @@
 from app.schemas.events import PermiSenseEvent, EventType, Severity
 
 
-# Current virtual-cell safety thresholds. These are explicit prototype
-# detection thresholds and must remain aligned with the PLC configuration
-# used by the demo scenario.
 OVERSPEED_THRESHOLD = 80.0
 HIGH_LOAD_THRESHOLD = 80.0
+
+CONTROL_TITLES = {
+    40001: "Motor enable change observed",
+    40002: "PLC operating mode change observed",
+    40003: "Conveyor speed setpoint change observed",
+    40004: "Acceleration limit change observed",
+    40005: "Production target change observed",
+    40006: "PLC reset command observed",
+    40010: "Overspeed limit change observed",
+    40011: "High-load limit change observed",
+    40012: "Jam timeout change observed",
+    40013: "PLC configuration version change observed",
+}
 
 
 def detect_event(event: PermiSenseEvent) -> list[dict]:
@@ -13,13 +23,18 @@ def detect_event(event: PermiSenseEvent) -> list[dict]:
     detections = []
 
     if event.event_type == EventType.CONTROL_WRITE:
+        title = CONTROL_TITLES.get(
+            event.register_address,
+            "Industrial control write observed",
+        )
         detections.append({
             "rule_id": "ICS-CONTROL-WRITE",
             "severity": Severity.HIGH,
-            "title": "Industrial control write observed",
+            "title": title,
             "reason": (
-                f"A control value was written to register "
-                f"{event.register_address} on {event.asset_id}."
+                f"A control value changed on register "
+                f"{event.register_address} of {event.asset_id}: "
+                f"{event.previous_value} → {event.value}."
             ),
             "evidence": {
                 "register_address": event.register_address,
@@ -27,6 +42,7 @@ def detect_event(event: PermiSenseEvent) -> list[dict]:
                 "new_value": event.value,
                 "protocol": event.protocol,
                 "source_address": event.source_address,
+                "observation_method": event.metadata.get("observation_method"),
             },
         })
 
@@ -76,6 +92,22 @@ def detect_event(event: PermiSenseEvent) -> list[dict]:
             "reason": "The PLC reports an active conveyor jam.",
             "evidence": {
                 "jam_state": event.value,
+            },
+        })
+
+    if (
+        event.register_address == 30007
+        and event.value is not None
+        and int(event.value) == 0
+    ):
+        detections.append({
+            "rule_id": "PROCESS-STOPPED",
+            "severity": Severity.HIGH,
+            "title": "Manufacturing process stopped",
+            "reason": "The PLC reports a stopped process state.",
+            "evidence": {
+                "process_state": event.value,
+                "state": "STOPPED",
             },
         })
 
