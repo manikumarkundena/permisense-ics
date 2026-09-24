@@ -41,7 +41,7 @@ async def generate(prompt: str) -> dict:
 
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
-        "gemini-2.5-flash:generateContent"
+        "gemini-3.8-flash:generateContent"
     )
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
