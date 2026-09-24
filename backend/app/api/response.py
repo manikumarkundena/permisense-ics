@@ -46,7 +46,9 @@ async def response_plan(
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
 
-    response = (incident.evidence_json or {}).get("response", {})
+    evidence = incident.evidence_json or {}
+    response = evidence.get("response", {})
+    control = evidence.get("control", {})
 
     return {
         "incident_id": incident_id,
@@ -58,6 +60,7 @@ async def response_plan(
                     f"{SAFE_SPEED_SETPOINT}%."
                 ),
                 "register_address": SPEED_REGISTER,
+                "current_value": control.get("new_value"),
                 "target_value": SAFE_SPEED_SETPOINT,
                 "requires_human_approval": True,
             }
@@ -80,13 +83,28 @@ async def approve_response(
             detail="Unsupported response action",
         )
 
+    if not payload.approved_by.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="approved_by is required",
+        )
+
     incident = await _get_incident(session, incident_id)
 
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
 
+    evidence = dict(incident.evidence_json or {})
+    existing_response = dict(evidence.get("response", {}))
+
+    if existing_response.get("executed"):
+        raise HTTPException(
+            status_code=409,
+            detail="Response has already been executed for this incident",
+        )
+
     if (
-        (incident.evidence_json or {}).get("risk", {}).get("level")
+        evidence.get("risk", {}).get("level")
         not in {"high", "critical"}
     ):
         raise HTTPException(
@@ -121,12 +139,11 @@ async def approve_response(
         client.close()
 
     now = datetime.now(timezone.utc).isoformat()
-    evidence = dict(incident.evidence_json or {})
-    response = dict(evidence.get("response", {}))
-    response.update({
+    response = {
+        **existing_response,
         "action": payload.action,
         "approved": True,
-        "approved_by": payload.approved_by,
+        "approved_by": payload.approved_by.strip(),
         "approved_at": now,
         "executed": True,
         "execution_id": str(uuid4()),
@@ -134,7 +151,7 @@ async def approve_response(
         "target_value": SAFE_SPEED_SETPOINT,
         "execution_method": "modbus_tcp",
         "recovered": False,
-    })
+    }
     evidence["response"] = response
     evidence["incident"] = {
         **dict(evidence.get("incident", {})),
