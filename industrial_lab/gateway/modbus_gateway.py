@@ -251,6 +251,36 @@ async def send_event(
     response.raise_for_status()
 
 
+def detect_control_changes(
+    previous: dict[int, float] | None,
+    current: dict[int, float],
+) -> list[tuple[int, float, float]]:
+    """
+    Return control-register transitions observed between two polls.
+
+    The first poll establishes a baseline and therefore produces no
+    change events.
+    """
+    if previous is None:
+        return []
+
+    changes = []
+
+    for register_address, value in current.items():
+        previous_value = previous.get(register_address)
+
+        if previous_value is not None and value != previous_value:
+            changes.append(
+                (
+                    register_address,
+                    previous_value,
+                    value,
+                )
+            )
+
+    return changes
+
+
 async def send_control_change(
     client: httpx.AsyncClient,
     register_address: int,
@@ -342,23 +372,21 @@ async def run_gateway() -> None:
 
                 control_changes = 0
 
-                if previous_controls is not None:
-                    for register_address, value in control_values.items():
-                        previous_value = previous_controls.get(
-                            register_address
-                        )
-
-                        if (
-                            previous_value is not None
-                            and value != previous_value
-                        ):
-                            await send_control_change(
-                                backend_client,
-                                register_address,
-                                previous_value,
-                                value,
-                            )
-                            control_changes += 1
+                for (
+                    register_address,
+                    previous_value,
+                    value,
+                ) in detect_control_changes(
+                    previous_controls,
+                    control_values,
+                ):
+                    await send_control_change(
+                        backend_client,
+                        register_address,
+                        previous_value,
+                        value,
+                    )
+                    control_changes += 1
 
                 previous_controls = control_values
 
