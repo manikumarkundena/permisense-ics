@@ -5,6 +5,7 @@ from app.api.telemetry import router as telemetry_router
 from app.api.incidents import router as incidents_router
 from app.api.response import router as response_router
 from app.api.copilot import router as copilot_router
+from app.api.live import router as live_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -19,6 +20,7 @@ app.include_router(telemetry_router)
 app.include_router(incidents_router)
 app.include_router(response_router)
 app.include_router(copilot_router)
+app.include_router(live_router)
 
 
 @app.get("/api/health")
@@ -45,6 +47,7 @@ async def system_status():
             "risk_engine": "online",
             "evidence": "online",
             "response_engine": "online",
+            "live_stream": "online",
             "ai_copilot": "configured" if settings.gemini_api_key else "not_configured",
         },
     }
