@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Menu, ShieldCheck } from "lucide-react";
-import { ThemeToggle } from "./theme-toggle";
+import { ArrowUpRight, ShieldCheck } from "lucide-react";
 
 export function SiteHeader() {
   return (
@@ -18,15 +17,9 @@ export function SiteHeader() {
           <a href="#architecture">Architecture</a>
         </nav>
 
-        <div className="nav-actions">
-          <ThemeToggle />
-          <Link href="/console" className="nav-console">
-            Live console <ArrowUpRight size={14} />
-          </Link>
-          <button className="icon-button mobile-menu" aria-label="Open navigation">
-            <Menu size={17} />
-          </button>
-        </div>
+        <Link href="/console" className="nav-console">
+          Open operator console <ArrowUpRight size={14} />
+        </Link>
       </div>
     </header>
   );
