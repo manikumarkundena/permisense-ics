@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, LockKeyhole, Play, ShieldCheck, Target } f
 import { useEffect, useState } from "react";
 import { ConsoleShell } from "@/components/console-shell";
 import { api } from "@/lib/api";
+import { useLiveEvents } from "@/hooks/use-live-events";
 import type { Incident, RecoveryResult, ResponseExecution, ResponsePlan } from "@/types/industrial";
 
 export default function ResponsePage() {
@@ -12,6 +13,7 @@ export default function ResponsePage() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const { correlationVersion } = useLiveEvents();
 
   const incident = incidents[0];
 
@@ -28,6 +30,12 @@ export default function ResponsePage() {
   useEffect(() => {
     loadIncidents();
   }, []);
+
+  useEffect(() => {
+    if (correlationVersion > 0) {
+      loadIncidents();
+    }
+  }, [correlationVersion]);
 
   useEffect(() => {
     if (incident) {
