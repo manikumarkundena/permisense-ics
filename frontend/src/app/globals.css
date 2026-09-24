@@ -1266,3 +1266,5 @@ button { font: inherit; }
   .chat-input-row { flex-direction:column; }
   .chat-input-row button { justify-content:center; }
 }
+
+.metric-card .metric-unit { display:inline; margin-left:5px; color:var(--muted); font:700 11px var(--font-geist-mono); }
