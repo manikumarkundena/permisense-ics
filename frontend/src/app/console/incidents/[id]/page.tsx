@@ -17,10 +17,10 @@ export default function IncidentDetail({ params }: { params: Promise<{ id: strin
   if (error) return <ConsoleShell><div className="error-banner"><AlertTriangle size={15}/>{error}</div><Link href="/console/incidents" className="text-link"><ArrowLeft size={14}/> Back to incidents</Link></ConsoleShell>;
   if (!incident) return <ConsoleShell><div className="empty-state large"><GitBranch size={28}/><strong>Loading incident evidence…</strong></div></ConsoleShell>;
 
-  const risk=obj(incident.risk), impact=obj(incident.impact), evidence=obj(incident.evidence);
+  const risk=obj(incident.risk), impact=obj(incident.impact), control=obj(incident.control);
   const mappings=incident.mitre_mappings ?? [];
   return <ConsoleShell>
-    <div className="breadcrumb"><Link href="/console/incidents"><ArrowLeft size={14}/> Incidents</Link><span>/</span>{incident.correlation_id.slice(0,8)}</div>
+    <div className="breadcrumb"><Link href="/console/incidents"><ArrowLeft size={14}/> Incidents</Link><span>/</span>{incident.incident_id.slice(0,8)}</div>
     <div className="incident-hero">
       <div><div className="section-label"><span /> CORRELATED INCIDENT</div><h1>{incident.title}</h1><p>{incident.reason}</p></div>
       <div className="risk-badge"><small>RISK</small><strong>{String(risk.level ?? incident.severity).toUpperCase()}</strong><span>{String(risk.score ?? "—")} / 100</span></div>
@@ -31,9 +31,9 @@ export default function IncidentDetail({ params }: { params: Promise<{ id: strin
         <div className="panel-header"><div><span>EVENT → IMPACT</span><h2>Evidence chain</h2></div><GitBranch size={18}/></div>
         <div className="evidence-flow">
           {[
-            ["CONTROL EVENT", String(evidence.register_address ?? "40003"), `${evidence.previous_value ?? "50"} → ${evidence.value ?? "90"}`, "threat"],
-            ["DETECTION", String(evidence.rule_id ?? "ICS-CONTROL-WRITE"), "HIGH", "amber"],
-            ["PROCESS", "ACTUAL SPEED", String(impact.evidence ?? "90 > 80"), "system"],
+            ["CONTROL EVENT", String(control.register_address ?? "40003"), `${control.previous_value ?? "50"} → ${control.new_value ?? "90"}`, "threat"],
+            ["DETECTION", String(incident.detections?.[0]?.rule_id ?? "ICS-CONTROL-WRITE"), "HIGH", "amber"],
+            ["PROCESS", "ACTUAL SPEED", String(incident.process_events?.[0]?.value ?? "90") + " > 80", "system"],
             ["IMPACT", String(impact.impact_type ?? "PROCESS_DEGRADATION"), String(impact.description ?? "Operational process deviation"), "amber"],
             ["RISK", String(risk.level ?? "CRITICAL"), `${risk.score ?? "—"} / 100`, "threat"]
           ].map(([label,title,sub,tone], i) => <div className={`evidence-step tone-${tone}`} key={label}><span>{String(i+1).padStart(2,"0")}</span><small>{label}</small><strong>{title}</strong><em>{sub}</em>{i<4 && <div className="evidence-connector"/>}</div>)}
