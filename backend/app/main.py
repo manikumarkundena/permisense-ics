@@ -2,6 +2,9 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.api.telemetry import router as telemetry_router
+from app.api.incidents import router as incidents_router
+from app.api.response import router as response_router
+from app.api.copilot import router as copilot_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -13,6 +16,9 @@ app = FastAPI(
 )
 
 app.include_router(telemetry_router)
+app.include_router(incidents_router)
+app.include_router(response_router)
+app.include_router(copilot_router)
 
 
 @app.get("/api/health")
@@ -32,11 +38,13 @@ async def system_status():
         "status": "operational",
         "components": {
             "api": "online",
-            "database": "not_checked",
-            "modbus": "not_started",
-            "mqtt": "not_started",
-            "detection": "not_started",
-            "risk_engine": "not_started",
-            "ai": "not_started",
+            "database": "configured",
+            "modbus": "configured",
+            "detection": "online",
+            "correlation": "online",
+            "risk_engine": "online",
+            "evidence": "online",
+            "response_engine": "online",
+            "ai_copilot": "configured" if settings.gemini_api_key else "not_configured",
         },
     }
