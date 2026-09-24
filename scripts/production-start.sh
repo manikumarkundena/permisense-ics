@@ -30,7 +30,7 @@ done
 
 echo "Starting FastAPI on 0.0.0.0:${API_PORT}..."
 uvicorn app.main:app --host 0.0.0.0 --port "${API_PORT}" &
-API_PID=!
+API_PID=$!
 
 echo "Waiting for API readiness..."
 for attempt in $(seq 1 60); do
@@ -62,7 +62,7 @@ done
 
 echo "Starting Virtual PLC on ${MODBUS_HOST:-127.0.0.1}:${MODBUS_PORT:-5020}..."
 python -m industrial_lab.plc.server &
-PLC_PID=!
+PLC_PID=$!
 
 echo "Waiting for Virtual PLC..."
 for attempt in $(seq 1 30); do
@@ -91,7 +91,7 @@ done
 
 echo "Starting Modbus telemetry gateway..."
 python -m industrial_lab.gateway.modbus_gateway &
-GATEWAY_PID=!
+GATEWAY_PID=$!
 
 echo "PermiSense production runtime started."
 echo "API PID=${API_PID} PLC PID=${PLC_PID} GATEWAY PID=${GATEWAY_PID}"
