@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CheckCircle2, CircleAlert, Send, ShieldAlert, UserRound } from "lucide-react";
+import { Bot, CheckCircle2, CircleAlert, Send, ShieldAlert, UserRound, WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ConsoleShell } from "@/components/console-shell";
 import { api } from "@/lib/api";
@@ -89,8 +89,8 @@ export default function CopilotPage() {
           </button>)}
         </div>
         <div className="copilot-evidence-strip"><span>{incident.asset_id}</span><span>{incident.severity}</span><span>{incident.process_id}</span><span>GROUNDED INPUT</span></div>
-        <div className="copilot-actions"><button className="approve-button" disabled={analyzing} onClick={analyze}><Send size={15}/>{analyzing ? "Analyzing evidence…" : "Generate incident brief"}</button><span>Gemini is optional until the API key is configured.</span></div>
-        {error && <div className="error-banner"><CircleAlert size={14}/>{error}</div>}
+        <div className="copilot-actions"><button className="approve-button" disabled={analyzing} onClick={analyze}><Send size={15}/>{analyzing ? "Analyzing evidence…" : "Generate incident brief"}</button><span>AI is an optional interpretation layer; detection and response remain backend-authoritative.</span></div>
+        {error && <div className="error-banner"><CircleAlert size={14}/><div><strong>Copilot unavailable</strong><span>{error.includes("503") ? "Gemini is not configured on the backend. Add GEMINI_API_KEY to enable generated analysis." : "The evidence pipeline is still available. Check the Gemini configuration or upstream service and retry."}</span></div></div>}
       </section>
 
       {result && <section className="copilot-result">
@@ -106,7 +106,7 @@ export default function CopilotPage() {
 
       <section className="copilot-chat console-panel">
         <div className="panel-header"><div><span>OPERATOR / COPILOT</span><h2>Ask about this incident</h2></div><Bot size={18}/></div>
-        <div className="grounded-banner chat-grounded"><CheckCircle2 size={15}/><strong>READ-ONLY INTELLIGENCE</strong><span>Answers use this incident's evidence context. Chat cannot execute or approve response actions.</span></div>
+        <div className="grounded-banner chat-grounded"><CheckCircle2 size={15}/><strong>READ-ONLY INTELLIGENCE</strong><span>Answers use this incident&apos;s persisted evidence. Chat cannot execute or approve response actions.</span></div>
         <div className="chat-suggestions">{prompts.map((prompt) => <button key={prompt} disabled={busy} onClick={() => void ask(prompt)}>{prompt}</button>)}</div>
         <div className="chat-thread" aria-live="polite">
           {!messages.length && <div className="empty-state"><Bot size={24}/><strong>Ask a grounded question</strong><p>For example: “What evidence proves the process was affected?”</p></div>}
