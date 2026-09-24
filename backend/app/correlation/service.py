@@ -10,17 +10,26 @@ from app.risk.service import assess_operational_risk
 from app.schemas.events import Severity
 
 
+REGISTER_LABELS = {
+    40001: "motor enable",
+    40002: "operating mode",
+    40003: "speed setpoint",
+    40004: "acceleration limit",
+    40005: "production target",
+    40010: "overspeed limit",
+    40011: "high-load limit",
+    40012: "jam timeout",
+    40013: "configuration version",
+}
+
+
 def evaluate_correlation(
     control_event: TelemetryEvent,
     process_events: list[TelemetryEvent],
     detection_ids: list[str] | None = None,
     detection_details: list[dict] | None = None,
 ) -> CorrelationResult | None:
-    result = correlate_control_to_process(
-        control_event,
-        process_events,
-    )
-
+    result = correlate_control_to_process(control_event, process_events)
     if result is None:
         return None
 
@@ -40,7 +49,6 @@ def evaluate_correlation(
         process_id=control_event.process_id,
         process_events=process_events,
     )
-
     impact_dict = impact.model_dump(mode="json") if impact else None
 
     risk = assess_operational_risk(
@@ -60,6 +68,12 @@ def evaluate_correlation(
         risk=risk_dict,
     )
     graph_dict = graph.model_dump(mode="json")
+
+    label = REGISTER_LABELS.get(
+        control_event.register_address,
+        f"register {control_event.register_address}",
+    )
+    impact_title = impact.title if impact else "Process deviation"
 
     evidence = {
         "control": {
@@ -93,10 +107,12 @@ def evaluate_correlation(
         process_id=control_event.process_id,
         timestamp=process_events[-1].timestamp,
         severity=Severity.HIGH,
-        title="Control manipulation followed by process deviation",
+        title=f"Unauthorized {label} change caused process deviation",
         reason=(
-            "A control write was followed by abnormal process telemetry "
-            "on the same industrial asset within 30 seconds."
+            f"A change to the PLC {label} "
+            f"({control_event.previous_value} → {control_event.value}) "
+            f"was followed by {impact_title.lower()} on the same asset "
+            "within 30 seconds."
         ),
         event_ids=event_ids,
         detection_ids=detection_ids or [],
