@@ -9,6 +9,15 @@ import { api } from "@/lib/api";
 import { useLiveEvents } from "@/hooks/use-live-events";
 import type { Incident, SystemStatus } from "@/types/industrial";
 
+function incidentTitle(incident: Incident) {
+  const register = Number(incident.control?.register_address);
+  if (register === 40002) return "Unauthorized operating mode change";
+  if (register === 40003) return "Unauthorized speed setpoint change";
+  if (register === 40004) return "Unauthorized acceleration limit change";
+  if (register === 40005) return "Unauthorized production target change";
+  return incident.title || "Industrial control incident";
+}
+
 export default function ConsolePage() {
   const { events, state, correlationVersion } = useLiveEvents();
   const [status, setStatus] = useState<SystemStatus | null>(null);
@@ -37,8 +46,8 @@ export default function ConsolePage() {
       <div className="console-title-row">
         <div>
           <div className="section-label"><span /> LIVE SECURITY CONSOLE</div>
-          <h1>Manufacturing cell command center</h1>
-          <p>One operator surface for telemetry, incidents, evidence, and controlled response.</p>
+          <h1>Human-centric industrial cyber resilience</h1>
+          <p>One operator surface for live process state, cyber evidence, explainable impact, and human-approved recovery.</p>
         </div>
         <LiveStatus state={state} />
       </div>
@@ -159,7 +168,7 @@ export default function ConsolePage() {
             >
               <span className={"incident-severity severity-" + incident.severity.toLowerCase()}>{incident.severity}</span>
               <div>
-                <strong>{incident.title}</strong>
+                <strong>{incidentTitle(incident)}</strong>
                 <small>{incident.asset_id} · {new Date(incident.timestamp).toLocaleTimeString()}</small>
               </div>
               <span>→</span>
