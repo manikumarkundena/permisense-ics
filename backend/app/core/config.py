@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator\nfrom pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://permisense:permisense@localhost:5433/permisense"
     )
 
-    mqtt_host: str = "localhost"
+    @field_validator("database_url", mode="before")\n    @classmethod\n    def normalize_database_url(cls, value: str) -> str:\n        if value.startswith("postgres://"):\n            return value.replace("postgres://", "postgresql+asyncpg://", 1)\n        if value.startswith("postgresql://"):\n            return value.replace("postgresql://", "postgresql+asyncpg://", 1)\n        return value\n\n    mqtt_host: str = "localhost"
     mqtt_port: int = 1883
 
     modbus_host: str = "127.0.0.1"
