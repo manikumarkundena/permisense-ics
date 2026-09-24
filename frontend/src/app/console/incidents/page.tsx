@@ -8,6 +8,15 @@ import { api } from "@/lib/api";
 import { useLiveEvents } from "@/hooks/use-live-events";
 import type { Incident } from "@/types/industrial";
 
+function incidentTitle(incident: Incident) {
+  const register = Number(incident.control?.register_address);
+  if (register === 40002) return "Unauthorized operating mode change";
+  if (register === 40003) return "Unauthorized speed setpoint change";
+  if (register === 40004) return "Unauthorized acceleration limit change";
+  if (register === 40005) return "Unauthorized production target change";
+  return incident.title || "Industrial control incident";
+}
+
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [error, setError] = useState("");
@@ -61,7 +70,7 @@ export default function IncidentsPage() {
               <span className={"incident-severity severity-" + incident.severity.toLowerCase()}>
                 {incident.severity}
               </span>
-              <div><strong>{incident.title}</strong><p>{incident.reason}</p></div>
+              <div><strong>{incidentTitle(incident)}</strong><p>{incident.reason}</p></div>
               <div className="incident-meta">
                 <span>{incident.asset_id}</span>
                 <span>{new Date(incident.timestamp).toLocaleString()}</span>
