@@ -79,6 +79,34 @@ async def get_detection_ids_for_events(
     return list(result.scalars().all())
 
 
+async def get_detection_details_for_events(
+    session: AsyncSession,
+    event_ids: list[str],
+) -> list[dict]:
+
+    if not event_ids:
+        return []
+
+    result = await session.execute(
+        select(Detection)
+        .where(Detection.event_id.in_(event_ids))
+        .order_by(Detection.timestamp.asc())
+    )
+
+    return [
+        {
+            "detection_id": detection.detection_id,
+            "event_id": detection.event_id,
+            "rule_id": detection.rule_id,
+            "severity": detection.severity,
+            "title": detection.title,
+            "reason": detection.reason,
+            "evidence": detection.evidence_json,
+        }
+        for detection in result.scalars().all()
+    ]
+
+
 async def correlation_already_exists(
     session: AsyncSession,
     control_event_id: str,
