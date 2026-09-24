@@ -1,179 +1,148 @@
 import Link from "next/link";
-import {
-  Activity, ArrowRight, CheckCircle2, CircleAlert, GitBranch, LockKeyhole,
-  Network, Radar, ScanSearch, ShieldCheck, Waypoints, Zap
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, Factory, GitBranch, LockKeyhole, Radar, ShieldCheck, Sparkles, Waypoints, Zap } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 
-const chain = [
-  ["EVENT", "A control write changes a PLC register."],
-  ["DETECT", "Deterministic rules identify suspicious industrial behavior."],
-  ["CORRELATE", "Cyber and process evidence are linked to the same asset."],
-  ["IMPACT", "Telemetry shows what changed in the operational process."],
-  ["RISK", "Operational consequences become explainable risk."],
-  ["RESPOND", "An allowlisted action is prepared for an operator."],
-  ["RECOVER", "Readback and process telemetry verify the result."]
-] as const;
-
-const capabilities = [
-  { icon: Radar, eyebrow: "01 / OBSERVE", title: "Protocol-real industrial telemetry", text: "Modbus/TCP and process telemetry enter one canonical event model with asset and register context." },
-  { icon: GitBranch, eyebrow: "02 / CORRELATE", title: "Cyber event → process impact", text: "Deterministic correlation connects a control change to the process behavior that follows it." },
-  { icon: ScanSearch, eyebrow: "03 / EXPLAIN", title: "Evidence before conclusions", text: "Register values, thresholds, detections, ATT&CK mappings, impact and risk remain visible to the operator." },
-  { icon: LockKeyhole, eyebrow: "04 / RESPOND", title: "Human-approved recovery", text: "Allowlisted response playbooks require approval, perform real writes, read them back and verify telemetry." }
+const pillars = [
+  { n:"01", title:"Human-centric", text:"Security intelligence supports the operator instead of hiding decisions behind automation.", icon:UsersIcon },
+  { n:"02", title:"Resilient", text:"Cyber events are connected to process state, operational impact and controlled recovery.", icon:ShieldCheck },
+  { n:"03", title:"Sustainable by design", text:"A hardware-independent digital industrial cell makes experimentation reproducible without pretending to be a physical plant.", icon:Factory },
 ];
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="section-label"><span />{children}</p>;
+function UsersIcon({ size=20 }: { size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.6-3.1 2.4-4.8 5.5-4.8s4.9 1.7 5.5 4.8"/><path d="M16 5.2a3 3 0 0 1 0 5.6M16.3 14.3c2.5.3 4 1.8 4.7 4.2"/></svg>;
 }
 
-function SignalMonitor() {
+const stages = [
+  ["EVENT","Control register changes","MODBUS / TCP"],
+  ["DETECT","Deterministic detection","CONTROL WRITE"],
+  ["PROCESS","Telemetry deviates","R30001 > LIMIT"],
+  ["IMPACT","Operational consequence","DEGRADED"],
+  ["DECIDE","Evidence + response plan","HUMAN GATE"],
+  ["RECOVER","Write → readback → verify","CLOSED LOOP"],
+];
+
+function IsometricCell() {
   return (
-    <div className="signal-monitor">
-      <div className="monitor-top">
-        <div><span className="live-dot" /> LIVE INDUSTRIAL SIGNAL</div>
-        <span>VIRTUAL CELL · PROTOCOL-REAL</span>
-      </div>
-      <div className="monitor-grid">
-        <div className="plant-route">
-          <div className="plant-node"><small>CONTROL</small><strong>PLC-01</strong><span>MODBUS/TCP</span></div>
-          <div className="route-line"><i /><span>40003</span></div>
-          <div className="plant-node motor-node"><small>PROCESS</small><strong>MOTOR / DRIVE</strong><span>CONVEYOR CELL</span></div>
-        </div>
-        <div className="register-panel">
-          <div className="micro-label">OBSERVED CONTROL EVENT</div>
-          <div className="register-title"><strong>40003</strong><span>speed setpoint</span></div>
-          <div className="register-change"><span>50.0</span><b>→</b><em>90.0</em></div>
-          <div className="register-meter"><i /><span>80 LIMIT</span></div>
-        </div>
-        <div className="signal-bottom">
-          <div><small>PROCESS TELEMETRY</small><strong>90.0 <span>%</span></strong><label>ACTUAL SPEED</label></div>
-          <div><small>IMPACT</small><strong className="danger-text">DEGRADED</strong><label>PROCESS STATE</label></div>
-          <div><small>RISK</small><strong className="danger-text">CRITICAL</strong><label>EVIDENCE GROUNDED</label></div>
-        </div>
-      </div>
-      <div className="monitor-chain">
-        <span className="done">EVENT</span><i /><span className="done">DETECT</span><i /><span className="done">PROCESS</span><i /><span className="alert">IMPACT</span><i /><span>RESPONSE</span>
-      </div>
+    <div className="iso-scene" aria-label="PermiSense virtual industrial cell">
+      <div className="iso-glow"/>
+      <div className="iso-grid"/>
+      <div className="iso-floor"/>
+      <div className="iso-line iso-line-a"/>
+      <div className="iso-line iso-line-b"/>
+      <div className="iso-device iso-plc"><span>PLC-01</span><b>CONTROL</b><i/></div>
+      <div className="iso-device iso-drive"><span>MOTOR</span><b>DRIVE</b><i/></div>
+      <div className="iso-device iso-sensor"><span>R30001</span><b>SPEED</b><i/></div>
+      <div className="iso-conveyor"><span/><span/><span/><span/></div>
+      <div className="iso-orbit orbit-a"/><div className="iso-orbit orbit-b"/>
+      <div className="iso-label label-one"><small>CYBER SIGNAL</small><strong>MODBUS / TCP</strong></div>
+      <div className="iso-label label-two"><small>PROCESS STATE</small><strong>RUNNING</strong></div>
+      <div className="iso-label label-three"><small>HUMAN GATE</small><strong>RESPONSE READY</strong></div>
+      <div className="iso-scan"/>
     </div>
   );
 }
 
 export default function Home() {
   return (
-    <main>
+    <main className="landing">
       <SiteHeader />
 
-      <section className="hero shell">
-        <div className="hero-copy">
-          <div className="eyebrow"><span className="eyebrow-dot" /> INDUSTRIAL INCIDENT INTELLIGENCE</div>
-          <h1>Detect the threat.<br/><em>Trace the impact.</em><br/>Decide the response.</h1>
-          <p className="hero-lede">PermiSense connects industrial communication, asset context, process behavior and controlled response into one explainable security workflow.</p>
+      <section className="hero hero-new shell">
+        <div className="hero-copy hero-new-copy">
+          <div className="eyebrow"><span className="eyebrow-dot"/> CYBER-PHYSICAL INCIDENT INTELLIGENCE · INDUSTRY 5.0</div>
+          <h1>Security that understands <em>the process.</em></h1>
+          <p className="hero-lede">PermiSense turns an industrial control change into an explainable chain of evidence — from protocol event to process impact, operational risk, human decision and verified recovery.</p>
           <div className="hero-actions">
-            <Link href="/console" className="button button-primary">Enter operator console <ArrowRight size={16} /></Link>
-            <Link href="/console/lab" className="button button-secondary">Open protocol-real demo lab <ArrowRight size={16} /></Link>
-            <a href="#evidence" className="button button-secondary">See the evidence model <ArrowRight size={16} /></a>
+            <Link href="/console/lab" className="button button-primary"><Sparkles size={15}/> Run the live industrial demo <ArrowRight size={15}/></Link>
+            <Link href="/console" className="button button-secondary">Enter command center <ArrowRight size={15}/></Link>
           </div>
           <div className="hero-proof">
-            <div><CheckCircle2 size={15} /> Real Modbus/TCP path</div>
-            <div><CheckCircle2 size={15} /> Deterministic detection</div>
-            <div><CheckCircle2 size={15} /> Human approval gate</div>
+            <span><CheckCircle2 size={14}/> Real Modbus/TCP writes</span>
+            <span><CheckCircle2 size={14}/> Deterministic security pipeline</span>
+            <span><CheckCircle2 size={14}/> Human-approved response</span>
           </div>
         </div>
-        <div className="hero-visual"><SignalMonitor /></div>
+        <div className="hero-new-visual"><IsometricCell/></div>
       </section>
 
-      <section className="signal-strip">
-        <div className="shell signal-grid">
-          <div><span className="signal-key">CELL</span><strong>MANUFACTURING-CELL-01</strong></div>
-          <div><span className="signal-key">ASSET</span><strong>PLC-01 / MODBUS TCP</strong></div>
-          <div><span className="signal-key">PROCESS</span><strong>CONVEYOR / MOTOR DRIVE</strong></div>
-          <div><span className="signal-key">MODE</span><strong className="state-ok"><span /> HUMAN-CONTROLLED</strong></div>
+      <section className="hero-ribbon">
+        <div className="shell ribbon-grid">
+          <div><small>INDUSTRIAL CELL</small><strong>MANUFACTURING-CELL-01</strong></div>
+          <div><small>CONTROLLER</small><strong>PLC-01 · MODBUS/TCP</strong></div>
+          <div><small>PROCESS</small><strong>MOTOR + CONVEYOR</strong></div>
+          <div><small>OPERATING MODEL</small><strong><i/> HUMAN-CONTROLLED</strong></div>
         </div>
       </section>
 
-      <section id="system" className="section shell">
+      <section className="section shell">
         <div className="section-heading">
-          <div><SectionLabel>Why PermiSense</SectionLabel><h2>A suspicious write is only the beginning.</h2></div>
-          <p>Industrial security becomes operationally useful when the system can connect a communication event to the asset, process behavior, evidence, impact and the next safe action.</p>
+          <div><div className="section-label"><span/> THE PRODUCT THESIS</div><h2>An alert is not an incident.<br/><em>Context makes it one.</em></h2></div>
+          <p>PermiSense correlates industrial communication with the process it controls. The operator sees not just that a register changed, but what changed downstream, why the system considers it risky, what evidence supports the conclusion, and which recovery action is available.</p>
         </div>
-        <div className="problem-grid">
-          <div className="problem-card problem-card-main"><span className="card-index">01</span><CircleAlert size={22}/><h3>CONTROL EVENT</h3><p>Register <strong>40003</strong> changes from <strong>50.0 → 90.0</strong>.</p><div className="mini-event"><span>MODBUS/TCP</span><span>PLC-01</span></div></div>
-          <div className="problem-arrow"><ArrowRight/></div>
-          <div className="problem-card"><span className="card-index">02</span><Activity size={22}/><h3>PROCESS EVIDENCE</h3><p>Actual speed reaches <strong>90.0</strong>, above the <strong>80.0</strong> threshold.</p><div className="mini-meter"><span/></div></div>
-          <div className="problem-arrow"><ArrowRight/></div>
-          <div className="problem-card"><span className="card-index">03</span><Waypoints size={22}/><h3>INCIDENT CONTEXT</h3><p>Cyber and process evidence form one explainable incident and response path.</p><div className="mini-tags"><span>IMPACT</span><span>RISK</span><span>ACTION</span></div></div>
+
+        <div className="chain-visual">
+          {stages.map(([kicker,title,detail], index) => (
+            <div className={"chain-stage " + (index === 3 ? "stage-alert" : "")} key={kicker}>
+              <div className="chain-stage-top"><span>{String(index+1).padStart(2,"0")}</span><span>{kicker}</span></div>
+              <strong>{title}</strong><small>{detail}</small>
+              {index < stages.length-1 && <ArrowRight className="chain-stage-arrow" size={16}/>}
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="chain-section">
+      <section className="section section-dark">
         <div className="shell">
-          <div className="section-heading chain-heading">
-            <div><SectionLabel>The PermiSense evidence chain</SectionLabel><h2>EVENT <span>→</span> RECOVERY</h2></div>
-            <p>Every stage has a concrete source in the system. The interface exposes the chain instead of hiding it behind a single alert score.</p>
+          <div className="section-heading dark-heading">
+            <div><div className="section-label"><span/> WHY THIS FITS INDUSTRY 5.0</div><h2>Cyber resilience becomes part of the <em>human-centered factory.</em></h2></div>
+            <p>Industry 5.0 emphasizes human-centricity, sustainability and resilience. PermiSense brings those principles into industrial cybersecurity by keeping the operator in control of consequential response decisions while making cyber-to-process impact visible.</p>
           </div>
-          <div className="chain">
-            {chain.map(([label, text], index) => (
-              <div className="chain-item" key={label}>
-                <div className="chain-node"><span>{String(index + 1).padStart(2, "0")}</span><div className="chain-line"/></div>
-                <div><span className="chain-label">{label}</span><p>{text}</p></div>
-              </div>
-            ))}
+          <div className="pillar-grid">
+            {pillars.map(({n,title,text,icon:Icon}) => <article className="pillar-card" key={n}><div className="pillar-top"><span>{n}</span><Icon size={19}/></div><h3>{title}</h3><p>{text}</p></article>)}
           </div>
         </div>
       </section>
 
       <section className="section shell">
-        <div className="section-heading"><div><SectionLabel>System capabilities</SectionLabel><h2>Built around the industrial event lifecycle.</h2></div></div>
-        <div className="capability-grid">
-          {capabilities.map(({icon: Icon, eyebrow, title, text}) => (
-            <article className="capability-card" key={eyebrow}><div className="capability-icon"><Icon size={20}/></div><span>{eyebrow}</span><h3>{title}</h3><p>{text}</p><ArrowRight className="capability-arrow" size={17}/></article>
-          ))}
+        <div className="section-heading">
+          <div><div className="section-label"><span/> OPERATOR WORKFLOW</div><h2>One surface from detection to recovery.</h2></div>
+        </div>
+        <div className="workflow-grid">
+          {[
+            [Radar,"01","OBSERVE","Industrial telemetry enters a canonical event model."],
+            [GitBranch,"02","CORRELATE","Cyber and process evidence are linked to the same asset."],
+            [Waypoints,"03","UNDERSTAND","Impact, ATT&CK context and risk remain inspectable."],
+            [LockKeyhole,"04","RESPOND","An allowlisted action waits behind human approval."],
+          ].map(([Icon,n,title,text]) => <article className="workflow-card" key={n}><div className="workflow-icon"><Icon size={19}/></div><span>{n} / {title}</span><h3>{text}</h3><ArrowRight size={16}/></article>)}
         </div>
       </section>
 
-      <section id="evidence" className="section shell">
-        <div className="evidence-panel">
-          <div className="evidence-copy">
-            <SectionLabel>Evidence model</SectionLabel>
-            <h2>Make the reasoning inspectable.</h2>
-            <p>PermiSense preserves the evidence that supports an incident: the control event, detection, process telemetry, impact, MITRE mapping and risk factors.</p>
-            <div className="evidence-facts"><div><span>REGISTER</span><strong>40003</strong></div><div><span>CHANGE</span><strong>50.0 → 90.0</strong></div><div><span>PROCESS</span><strong>90.0 %</strong></div><div><span>THRESHOLD</span><strong>80.0 %</strong></div></div>
-          </div>
-          <div className="evidence-graph" aria-label="Evidence relationship preview">
-            <div className="graph-node graph-control"><small>01 · EVENT</small><strong>40003</strong><span>50 → 90</span></div>
-            <div className="graph-node graph-detection"><small>02 · DETECTION</small><strong>CONTROL WRITE</strong><span>HIGH</span></div>
-            <div className="graph-node graph-process"><small>03 · PROCESS</small><strong>ACTUAL SPEED</strong><span>90 &gt; 80</span></div>
-            <div className="graph-node graph-impact"><small>04 · IMPACT</small><strong>DEGRADED</strong><span>PROCESS STATE</span></div>
-            <div className="graph-node graph-risk"><small>05 · RISK</small><strong>CRITICAL</strong><span>EVIDENCE GROUNDED</span></div>
-            <div className="graph-wire wire-a"/><div className="graph-wire wire-b"/><div className="graph-wire wire-c"/><div className="graph-wire wire-d"/>
-          </div>
+      <section className="section shell">
+        <div className="demo-banner">
+          <div><div className="section-label"><span/> PROTOCOL-REAL DEMO LAB</div><h2>Don’t simulate the alert. <em>Trigger the industrial event.</em></h2><p>The demo control invokes backend scenario endpoints that perform real Modbus/TCP writes against the virtual PLC. The same gateway, detection, correlation, risk, incident, response and verification path then handles the result.</p></div>
+          <Link href="/console/lab" className="button button-primary">Open demo lab <ArrowRight size={15}/></Link>
         </div>
       </section>
 
-      <section id="response" className="section shell">
-        <div className="response-panel">
-          <div><SectionLabel>Controlled response</SectionLabel><h2>Recovery stays behind a human approval gate.</h2><p>PermiSense does not turn an AI suggestion into an automatic plant action. The response layer validates an allowlisted playbook, records explicit approval, performs the controlled write and verifies recovery from telemetry.</p><Link href="/console/response" className="text-link">Open response workspace <ArrowRight size={15}/></Link></div>
-          <div className="response-flow">
-            <div className="response-step done"><span>01</span><ShieldCheck/><strong>Evidence</strong><small>Incident grounded</small></div><ArrowRight className="response-arrow"/>
-            <div className="response-step active"><span>02</span><LockKeyhole/><strong>Approve</strong><small>Operator confirmation</small></div><ArrowRight className="response-arrow"/>
-            <div className="response-step"><span>03</span><Zap/><strong>Execute</strong><small>Allowlisted action</small></div><ArrowRight className="response-arrow"/>
-            <div className="response-step"><span>04</span><CheckCircle2/><strong>Recover</strong><small>Verify telemetry</small></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="architecture" className="architecture-section">
+      <section className="section architecture-section">
         <div className="shell">
-          <div className="section-heading"><div><SectionLabel>Architecture</SectionLabel><h2>A protocol-real virtual industrial cell.</h2></div><p>The prototype is hardware-independent: a real Modbus/TCP PLC simulator, process runtime, gateway and incident intelligence stack provide a reproducible industrial lab.</p></div>
-          <div className="architecture-map">
-            {[["01","Industrial cell","PLC + process + sensors"],["02","Telemetry","Canonical event stream"],["03","Detection","Deterministic rules"],["04","Correlation","Cyber + process evidence"],["05","Risk","Operational impact"],["06","Response","Approval + recovery"]].map(([n,title,desc]) => <div className="arch-node" key={n}><span>{n}</span><Network size={17}/><strong>{title}</strong><small>{desc}</small></div>)}
+          <div className="section-heading">
+            <div><div className="section-label"><span/> ARCHITECTURE</div><h2>Protocol-real. Hardware-independent. Evidence-first.</h2></div>
+            <p>The current prototype uses a virtual industrial cell because physical PLC hardware is unavailable. That boundary is explicit; the communication and response path remains protocol-real and designed for future hardware deployment.</p>
+          </div>
+          <div className="arch-flow">
+            {["VIRTUAL CELL","TELEMETRY","DETECTION","CORRELATION","IMPACT + RISK","HUMAN RESPONSE"].map((item,index) => <div key={item} className="arch-flow-item"><span>{String(index+1).padStart(2,"0")}</span><strong>{item}</strong>{index<5 && <ArrowRight size={14}/>}</div>)}
           </div>
         </div>
       </section>
 
-      <section className="final-cta shell"><div className="cta-mark"><ShieldCheck size={19}/></div><SectionLabel>PERMISENSE</SectionLabel><h2>See the incident, not just the alert.</h2><p>Enter the console and follow a real protocol-level event through detection, process impact, response and recovery.</p><Link href="/console" className="button button-primary">Open operator console <ArrowRight size={16}/></Link></section>
+      <section className="final-cta shell">
+        <div className="cta-mark"><ShieldCheck size={19}/></div>
+        <div><div className="section-label"><span/> PERMISENSE</div><h2>Detect the threat. Trace the impact. Decide the response.</h2><p>Enter the command center or run the protocol-real industrial demonstration.</p></div>
+        <div className="cta-actions"><Link href="/console" className="button button-primary">Command center <ArrowRight size={15}/></Link><Link href="/console/lab" className="button button-secondary">Demo lab <ArrowRight size={15}/></Link></div>
+      </section>
 
-      <footer className="site-footer"><div className="shell footer-inner"><div className="brand"><span className="brand-mark"><ShieldCheck size={17}/></span><span>PERMISENSE</span></div><span>Cyber-physical incident intelligence</span><span>Protocol-real virtual industrial lab</span></div></footer>
+      <footer className="site-footer"><div className="shell footer-inner"><div className="brand"><span className="brand-mark"><ShieldCheck size={17}/></span><span>PERMISENSE</span></div><span>Cyber-physical incident intelligence</span><span>Industry 5.0 · human-centric resilience</span></div></footer>
     </main>
   );
 }
