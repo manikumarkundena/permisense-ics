@@ -9,9 +9,9 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 class Settings(BaseSettings):
     app_name: str = "PermiSense"
-    app_version: str = "0.1.0"
+    app_version: str = "0.2.0"
     environment: str = "development"
-    debug: bool = True
+    debug: bool = False
 
     database_url: str = (
         "postgresql+asyncpg://permisense:permisense@localhost:5433/permisense"
@@ -22,6 +22,15 @@ class Settings(BaseSettings):
 
     modbus_host: str = "127.0.0.1"
     modbus_port: int = 5020
+
+    # Comma-separated browser origins. Example:
+    # CORS_ORIGINS=https://permisense.example.com
+    cors_origins: str = (
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000,"
+        "http://localhost:3001,"
+        "http://127.0.0.1:3001"
+    )
 
     gemini_api_key: str | None = None
 
