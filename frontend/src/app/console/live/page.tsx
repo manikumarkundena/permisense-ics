@@ -53,7 +53,7 @@ export default function LivePage() {
         <section className="live-machine-card">
           <div className="machine-top">
             <span><ServerCog size={15}/> PLC-01 / MANUFACTURING-CELL-01</span>
-            <span>MODBUS / TCP · 127.0.0.1:5020</span>
+            <span>MODBUS / TCP · INTERNAL GATEWAY</span>
           </div>
           <div className="machine-diagram" aria-label="Industrial cell flow">
             <div className="machine-block"><ServerCog size={24}/><strong>PLC-01</strong><small>CONTROLLER</small></div>
