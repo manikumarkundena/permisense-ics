@@ -69,7 +69,9 @@ export type ResponseExecution = {
 export type RecoveryResult = {
   incident_id: string;
   recovered: boolean;
-  actual_speed: number;
-  threshold: number;
+  control_value: number;
+  target_value: number;
+  process_register?: number | null;
+  process_value?: number | null;
   status: string;
 };
