@@ -11,6 +11,15 @@ type CopilotResult = { incident_id: string; grounded: boolean; copilot: { summar
 type ChatResult = { incident_id: string; grounded: boolean; question: string; copilot: { answer: string; evidence_used: string[] | string; action_advisory: string; limitation: string; } };
 type Message = { role: "operator" | "copilot"; text: string; evidence?: string };
 
+function incidentTitle(incident: Incident) {
+  const register = Number(incident.control?.register_address);
+  if (register === 40002) return "Unauthorized operating mode change";
+  if (register === 40003) return "Unauthorized speed setpoint change";
+  if (register === 40004) return "Unauthorized acceleration limit change";
+  if (register === 40005) return "Unauthorized production target change";
+  return incident.title || "Industrial control incident";
+}
+
 const prompts = [
   "Why was this incident classified as critical?",
   "What evidence proves the process was affected?",
@@ -73,10 +82,10 @@ export default function CopilotPage() {
 
     {!incident ? <div className="empty-state large"><Bot size={30}/><strong>No incident evidence available</strong><p>Create a real correlated incident first.</p></div> : <div className="copilot-workspace">
       <section className="copilot-command console-panel">
-        <div className="panel-header"><div><span>INCIDENT CONTEXT</span><h2>{incident.title}</h2></div><ShieldAlert size={18}/></div>
+        <div className="panel-header"><div><span>INCIDENT CONTEXT</span><h2>{incidentTitle(incident)}</h2></div><ShieldAlert size={18}/></div>
         <div className="response-incident-list">
           {incidents.map((item) => <button key={item.incident_id} className={item.incident_id===incident.incident_id ? "selected":""} onClick={() => setSelectedIncidentId(item.incident_id)}>
-            <span>{item.incident_id.slice(0,8)}</span><strong>{item.title}</strong><small>{item.asset_id} · {item.status ?? "open"}</small>
+            <span>{item.incident_id.slice(0,8)}</span><strong>{incidentTitle(item)}</strong><small>{item.asset_id} · {item.status ?? "open"}</small>
           </button>)}
         </div>
         <div className="copilot-evidence-strip"><span>{incident.asset_id}</span><span>{incident.severity}</span><span>{incident.process_id}</span><span>GROUNDED INPUT</span></div>
