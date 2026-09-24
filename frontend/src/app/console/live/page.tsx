@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, ArrowLeft, Gauge, Radio, RotateCcw, ServerCog } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { ConsoleShell } from "@/components/console-shell";
 import { LiveStatus } from "@/components/live-status";
@@ -12,7 +13,7 @@ function valueOf(events: LiveEvent[], register: number) {
   return event?.value;
 }
 
-function processStateLabel(value: number | undefined) {
+function processStateLabel(value: number | null | undefined) {
   if (value == null) return "—";
   const states: Record<number, string> = {
     0: "STOPPED",
@@ -33,6 +34,20 @@ export default function LivePage() {
   const position = valueOf(events, 30004);
   const workpieces = valueOf(events, 30005);
   const process = valueOf(events, 30007);
+
+  const metrics: Array<{
+    label: string;
+    value: number | null | undefined;
+    unit: string;
+    register: number;
+    icon: LucideIcon;
+  }> = [
+    { label: "SPEED", value: speed, unit: "%", register: 30001, icon: Gauge },
+    { label: "LOAD", value: load, unit: "%", register: 30003, icon: Activity },
+    { label: "CURRENT", value: current, unit: "A", register: 30002, icon: Radio },
+    { label: "POSITION", value: position, unit: "°", register: 30004, icon: RotateCcw },
+    { label: "WORKPIECES", value: workpieces, unit: "", register: 30005, icon: ServerCog },
+  ];
 
   return (
     <ConsoleShell>
@@ -92,17 +107,11 @@ export default function LivePage() {
       </div>
 
       <div className="telemetry-grid">
-        {[
-          ["SPEED", speed, "%", 30001, Gauge],
-          ["LOAD", load, "%", 30003, Activity],
-          ["CURRENT", current, "A", 30002, Radio],
-          ["POSITION", position, "°", 30004, RotateCcw],
-          ["WORKPIECES", workpieces, "", 30005, ServerCog],
-        ].map(([label, value, unit, register, Icon]) => (
-          <div className="metric-card" key={label as string}>
-            <div><span>{label as string}</span><Icon size={15}/></div>
+        {metrics.map(({ label, value, unit, register, icon: Icon }) => (
+          <div className="metric-card" key={label}>
+            <div><span>{label}</span><Icon size={15}/></div>
             <strong>{value == null ? "—" : Number(value).toFixed(label === "WORKPIECES" ? 0 : 1)}</strong>
-            <small>{unit as string} · INPUT REGISTER {register as number}</small>
+            <small>{unit} · INPUT REGISTER {register}</small>
           </div>
         ))}
       </div>
