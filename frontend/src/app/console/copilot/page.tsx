@@ -90,7 +90,7 @@ export default function CopilotPage() {
         </div>
         <div className="copilot-evidence-strip"><span>{incident.asset_id}</span><span>{incident.severity}</span><span>{incident.process_id}</span><span>GROUNDED INPUT</span></div>
         <div className="copilot-actions"><button className="approve-button" disabled={analyzing} onClick={analyze}><Send size={15}/>{analyzing ? "Analyzing evidence…" : "Generate incident brief"}</button><span>AI is an optional interpretation layer; detection and response remain backend-authoritative.</span></div>
-        {error && <div className="error-banner"><CircleAlert size={14}/><div><strong>Copilot unavailable</strong><span>{error.includes("503") ? "Gemini is not configured on the backend. Add GEMINI_API_KEY to enable generated analysis." : "The evidence pipeline is still available. Check the Gemini configuration or upstream service and retry."}</span></div></div>}
+        {error && <div className="error-banner"><CircleAlert size={14}/><div><strong>Copilot unavailable</strong><span>{error.includes("503") ? "Gemini is temporarily unavailable. The incident evidence and deterministic security pipeline remain available; retry when the upstream model is available." : error.includes("401") || error.includes("403") ? "Gemini authentication was rejected. The security evidence pipeline remains available." : "The evidence pipeline is still available. Check the AI upstream service and retry."}</span></div></div>}
       </section>
 
       {result && <section className="copilot-result">
@@ -100,7 +100,7 @@ export default function CopilotPage() {
           <article className="copilot-answer"><span>EVIDENCE</span><p>{Array.isArray(result.copilot.evidence) ? result.copilot.evidence.join(" · ") : result.copilot.evidence}</p></article>
           <article className="copilot-answer"><span>IMPACT</span><p>{result.copilot.impact}</p></article>
           <article className="copilot-answer"><span>RECOMMENDED ACTION</span><p>{result.copilot.recommended_action}</p></article>
-          <article className="copilot-answer"><span>LIMITATION</span><p>{result.copilot.confidence_note}</p></article>
+          <article className="copilot-answer"><span>CONFIDENCE / BOUNDARY</span><p>{result.copilot.confidence_note}</p></article>
         </div>
       </section>}
 
