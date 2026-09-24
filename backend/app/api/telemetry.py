@@ -9,14 +9,10 @@ from app.correlation.repository import (
     get_detection_ids_for_events,
     save_correlation,
 )
-
 from app.correlation.service import evaluate_correlation
-
 from app.detection.repository import save_detection
 from app.detection.service import evaluate_event
-
 from app.schemas.events import PermiSenseEvent
-
 from app.telemetry.repository import save_event
 
 
@@ -34,16 +30,11 @@ async def ingest_event(
     event: PermiSenseEvent,
     session: AsyncSession = Depends(get_db),
 ):
-
     # 1. Save canonical telemetry event.
-    saved_event = await save_event(
-        session,
-        event,
-    )
+    saved_event = await save_event(session, event)
 
-    # 2. Run deterministic detection.
+    # 2. Run deterministic detection and persist every match.
     detection_results = evaluate_event(event)
-
     saved_detections = []
 
     for detection_result in detection_results:
@@ -51,44 +42,44 @@ async def ingest_event(
             session,
             detection_result,
         )
-
         saved_detections.append(saved_detection)
 
-    # 3. Correlation only becomes possible when
-    #    process telemetry arrives after a control event.
+    # 3. Correlate process telemetry with recent control events.
     correlations = []
 
     if saved_event.event_type == "sensor_update":
-
         recent_controls = await find_recent_control_events(
             session,
             saved_event,
         )
 
         for control_event in recent_controls:
-
             if await correlation_already_exists(
                 session,
                 control_event.event_id,
             ):
                 continue
 
+            # The two event IDs are known before correlation is evaluated,
+            # so their persisted detection IDs can be included in the
+            # evidence graph on the first and only evaluation.
+            candidate_event_ids = [
+                control_event.event_id,
+                saved_event.event_id,
+            ]
+            detection_ids = await get_detection_ids_for_events(
+                session,
+                candidate_event_ids,
+            )
+
             correlation_result = evaluate_correlation(
                 control_event,
                 [saved_event],
+                detection_ids=detection_ids,
             )
 
             if correlation_result is None:
                 continue
-
-            event_ids = correlation_result.event_ids
-
-            detection_ids = await get_detection_ids_for_events(
-                session,
-                event_ids,
-            )
-
-            correlation_result.detection_ids = detection_ids
 
             saved_correlation = await save_correlation(
                 session,
@@ -100,6 +91,10 @@ async def ingest_event(
                     "correlation_id": saved_correlation.correlation_id,
                     "severity": saved_correlation.severity,
                     "title": saved_correlation.title,
+                    "risk": correlation_result.risk,
+                    "impact": correlation_result.impact,
+                    "mitre_mappings": correlation_result.mitre_mappings,
+                    "evidence_graph": correlation_result.evidence_graph,
                 }
             )
 

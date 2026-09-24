@@ -1,18 +1,17 @@
 from app.schemas.events import PermiSenseEvent, EventType, Severity
 
 
+# Current virtual-cell safety thresholds. These are explicit prototype
+# detection thresholds and must remain aligned with the PLC configuration
+# used by the demo scenario.
+OVERSPEED_THRESHOLD = 80.0
+HIGH_LOAD_THRESHOLD = 80.0
+
+
 def detect_event(event: PermiSenseEvent) -> list[dict]:
-    """
-    Deterministic industrial detection rules.
-
-    This function does not use AI or random scoring.
-    """
-
+    """Deterministic industrial detection rules. No AI or random scoring."""
     detections = []
 
-    # ---------------------------------------------------------
-    # Rule 1: Control write
-    # ---------------------------------------------------------
     if event.event_type == EventType.CONTROL_WRITE:
         detections.append({
             "rule_id": "ICS-CONTROL-WRITE",
@@ -31,54 +30,40 @@ def detect_event(event: PermiSenseEvent) -> list[dict]:
             },
         })
 
-    # ---------------------------------------------------------
-    # Rule 2: High speed
-    # ---------------------------------------------------------
     if (
         event.register_address == 30001
         and event.value is not None
-        and float(event.value) > 80.0
+        and float(event.value) > OVERSPEED_THRESHOLD
     ):
         detections.append({
             "rule_id": "PROCESS-OVERSPEED",
             "severity": Severity.HIGH,
             "title": "Conveyor overspeed detected",
-            "reason": (
-                f"Actual conveyor speed reached "
-                f"{event.value}%."
-            ),
+            "reason": f"Actual conveyor speed reached {event.value}%.",
             "evidence": {
                 "actual_speed": event.value,
-                "threshold": 80.0,
+                "threshold": OVERSPEED_THRESHOLD,
                 "unit": event.unit,
             },
         })
 
-    # ---------------------------------------------------------
-    # Rule 3: High motor load
-    # ---------------------------------------------------------
     if (
         event.register_address == 30003
         and event.value is not None
-        and float(event.value) > 80.0
+        and float(event.value) > HIGH_LOAD_THRESHOLD
     ):
         detections.append({
             "rule_id": "PROCESS-HIGH-LOAD",
             "severity": Severity.HIGH,
             "title": "High motor load detected",
-            "reason": (
-                f"Motor load reached {event.value}%."
-            ),
+            "reason": f"Motor load reached {event.value}%.",
             "evidence": {
                 "motor_load": event.value,
-                "threshold": 80.0,
+                "threshold": HIGH_LOAD_THRESHOLD,
                 "unit": event.unit,
             },
         })
 
-    # ---------------------------------------------------------
-    # Rule 4: Jam
-    # ---------------------------------------------------------
     if (
         event.register_address == 30006
         and event.value is not None

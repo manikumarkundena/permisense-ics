@@ -29,7 +29,6 @@ def make_event(
 
 
 def test_control_write_correlates_with_process_deviation():
-
     start = datetime.now(timezone.utc)
 
     control_event = make_event(
@@ -51,6 +50,7 @@ def test_control_write_correlates_with_process_deviation():
     result = evaluate_correlation(
         control_event,
         [process_event],
+        detection_ids=["det-control-001", "det-process-001"],
     )
 
     assert result is not None
@@ -63,9 +63,34 @@ def test_control_write_correlates_with_process_deviation():
         "evt-process-001",
     ]
 
+    assert result.mitre_mappings
+    assert result.mitre_mappings[0]["technique_id"] == "T1692.001"
+    assert any(
+        mapping["technique_id"] == "T0831"
+        for mapping in result.mitre_mappings
+    )
+
+    assert result.impact is not None
+    assert result.impact["impact_type"] == "process_degradation"
+    assert result.impact["title"] == "Conveyor overspeed"
+
+    assert result.risk is not None
+    assert result.risk["level"] == "critical"
+    assert result.risk["score"] == 100
+
+    graph = result.evidence_graph
+    assert graph is not None
+    node_ids = {node["id"] for node in graph["nodes"]}
+    assert "evt-control-001" in node_ids
+    assert "evt-process-001" in node_ids
+    assert "det-control-001" in node_ids
+    assert "det-process-001" in node_ids
+    assert "mitre:T1692.001" in node_ids
+    assert result.impact["impact_id"] in node_ids
+    assert result.risk["risk_id"] in node_ids
+
 
 def test_unrelated_asset_does_not_correlate():
-
     start = datetime.now(timezone.utc)
 
     control_event = make_event(

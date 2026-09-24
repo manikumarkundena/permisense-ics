@@ -15,4 +15,8 @@ class CorrelationResult(BaseModel):
     reason: str
     event_ids: list[str]
     detection_ids: list[str]
+    mitre_mappings: list[dict] = Field(default_factory=list)
+    impact: dict | None = None
+    risk: dict | None = None
+    evidence_graph: dict | None = None
     evidence: dict = Field(default_factory=dict)
