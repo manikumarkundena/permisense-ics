@@ -15,8 +15,10 @@ router = APIRouter(prefix="/api/incidents", tags=["Response"])
 
 
 SAFE_SPEED_SETPOINT = 50.0
+SAFE_SPEED_THRESHOLD = 80.0
 SPEED_REGISTER = 40003
 SPEED_OFFSET = 2
+ACTUAL_SPEED_OFFSET = 0
 PLC_DEVICE_ID = 1
 
 
@@ -25,12 +27,13 @@ class ApprovalRequest(BaseModel):
     approved_by: str = "operator"
 
 
-def _get_incident(session: AsyncSession, incident_id: str):
-    return session.execute(
+async def _get_incident(session: AsyncSession, incident_id: str):
+    result = await session.execute(
         select(Correlation).where(
             Correlation.correlation_id == incident_id
         )
     )
+    return result.scalar_one_or_none()
 
 
 @router.get("/{incident_id}/response")
@@ -38,25 +41,30 @@ async def response_plan(
     incident_id: str,
     session: AsyncSession = Depends(get_db),
 ):
-    result = await _get_incident(session, incident_id)
-    incident = result.scalar_one_or_none()
+    incident = await _get_incident(session, incident_id)
 
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
+
+    response = (incident.evidence_json or {}).get("response", {})
 
     return {
         "incident_id": incident_id,
         "recommendations": [
             {
                 "action": "set_safe_speed",
-                "description": f"Restore conveyor speed setpoint to {SAFE_SPEED_SETPOINT}%.",
+                "description": (
+                    f"Restore conveyor speed setpoint to "
+                    f"{SAFE_SPEED_SETPOINT}%."
+                ),
                 "register_address": SPEED_REGISTER,
                 "target_value": SAFE_SPEED_SETPOINT,
                 "requires_human_approval": True,
             }
         ],
-        "approved": incident.evidence_json.get("response", {}).get("approved", False),
-        "executed": incident.evidence_json.get("response", {}).get("executed", False),
+        "approved": response.get("approved", False),
+        "executed": response.get("executed", False),
+        "recovered": response.get("recovered", False),
     }
 
 
@@ -67,16 +75,24 @@ async def approve_response(
     session: AsyncSession = Depends(get_db),
 ):
     if payload.action != "set_safe_speed":
-        raise HTTPException(status_code=400, detail="Unsupported response action")
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported response action",
+        )
 
-    result = await _get_incident(session, incident_id)
-    incident = result.scalar_one_or_none()
+    incident = await _get_incident(session, incident_id)
 
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
 
-    if incident.evidence_json.get("risk", {}).get("level") not in {"high", "critical"}:
-        raise HTTPException(status_code=400, detail="Response is only available for high/critical incidents")
+    if (
+        (incident.evidence_json or {}).get("risk", {}).get("level")
+        not in {"high", "critical"}
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Response is only available for high/critical incidents",
+        )
 
     client = ModbusTcpClient(
         settings.modbus_host,
@@ -84,7 +100,10 @@ async def approve_response(
     )
 
     if not client.connect():
-        raise HTTPException(status_code=503, detail="PLC is unavailable")
+        raise HTTPException(
+            status_code=503,
+            detail="PLC is unavailable",
+        )
 
     try:
         raw_value = int(SAFE_SPEED_SETPOINT * 10)
@@ -94,7 +113,10 @@ async def approve_response(
             device_id=PLC_DEVICE_ID,
         )
         if write.isError():
-            raise HTTPException(status_code=502, detail="PLC rejected response command")
+            raise HTTPException(
+                status_code=502,
+                detail="PLC rejected response command",
+            )
     finally:
         client.close()
 
@@ -111,6 +133,7 @@ async def approve_response(
         "target_register": SPEED_REGISTER,
         "target_value": SAFE_SPEED_SETPOINT,
         "execution_method": "modbus_tcp",
+        "recovered": False,
     })
     evidence["response"] = response
     evidence["incident"] = {
@@ -125,4 +148,73 @@ async def approve_response(
         "status": "executed",
         "incident_id": incident_id,
         "response": response,
+    }
+
+
+@router.post("/{incident_id}/response/verify")
+async def verify_recovery(
+    incident_id: str,
+    session: AsyncSession = Depends(get_db),
+):
+    incident = await _get_incident(session, incident_id)
+
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    evidence = dict(incident.evidence_json or {})
+    response = dict(evidence.get("response", {}))
+
+    if not response.get("executed"):
+        raise HTTPException(
+            status_code=400,
+            detail="No approved response has been executed",
+        )
+
+    client = ModbusTcpClient(
+        settings.modbus_host,
+        port=settings.modbus_port,
+    )
+
+    if not client.connect():
+        raise HTTPException(
+            status_code=503,
+            detail="PLC is unavailable",
+        )
+
+    try:
+        read = client.read_input_registers(
+            address=ACTUAL_SPEED_OFFSET,
+            count=1,
+            device_id=PLC_DEVICE_ID,
+        )
+        if read.isError():
+            raise HTTPException(
+                status_code=502,
+                detail="PLC rejected recovery verification read",
+            )
+        actual_speed = read.registers[0] * 0.1
+    finally:
+        client.close()
+
+    recovered = actual_speed <= SAFE_SPEED_THRESHOLD
+    response["recovery_checked_at"] = datetime.now(timezone.utc).isoformat()
+    response["actual_speed"] = actual_speed
+    response["recovered"] = recovered
+    evidence["response"] = response
+
+    if recovered:
+        evidence["incident"] = {
+            **dict(evidence.get("incident", {})),
+            "status": "recovered",
+        }
+
+    incident.evidence_json = evidence
+    await session.commit()
+
+    return {
+        "incident_id": incident_id,
+        "recovered": recovered,
+        "actual_speed": actual_speed,
+        "threshold": SAFE_SPEED_THRESHOLD,
+        "status": "recovered" if recovered else "awaiting_recovery",
     }
