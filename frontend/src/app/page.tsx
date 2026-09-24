@@ -70,6 +70,7 @@ export default function Home() {
           <p className="hero-lede">PermiSense connects industrial communication, asset context, process behavior and controlled response into one explainable security workflow.</p>
           <div className="hero-actions">
             <Link href="/console" className="button button-primary">Enter operator console <ArrowRight size={16} /></Link>
+            <Link href="/console/lab" className="button button-secondary">Open protocol-real demo lab <ArrowRight size={16} /></Link>
             <a href="#evidence" className="button button-secondary">See the evidence model <ArrowRight size={16} /></a>
           </div>
           <div className="hero-proof">
