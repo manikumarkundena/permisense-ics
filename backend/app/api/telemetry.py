@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -13,6 +14,7 @@ from app.correlation.repository import (
 from app.correlation.service import evaluate_correlation
 from app.detection.repository import save_detection
 from app.detection.service import evaluate_event
+from app.models.telemetry_event import TelemetryEvent
 from app.schemas.events import PermiSenseEvent
 from app.telemetry.repository import save_event
 
@@ -21,6 +23,46 @@ router = APIRouter(
     prefix="/api/telemetry",
     tags=["Telemetry"],
 )
+
+
+def _event_payload(event: TelemetryEvent) -> dict:
+    return {
+        "event_id": event.event_id,
+        "timestamp": event.timestamp,
+        "source": event.source,
+        "event_type": event.event_type,
+        "asset_id": event.asset_id,
+        "asset_type": event.asset_type,
+        "source_address": event.source_address,
+        "destination_address": event.destination_address,
+        "protocol": event.protocol,
+        "command": event.command,
+        "register_address": event.register_address,
+        "previous_value": event.previous_value,
+        "value": event.value,
+        "unit": event.unit,
+        "process_id": event.process_id,
+        "severity": event.severity,
+        "metadata": event.metadata_json,
+    }
+
+
+@router.get("/events")
+async def list_telemetry_events(
+    limit: int = Query(default=80, ge=1, le=200),
+    session: AsyncSession = Depends(get_db),
+):
+    result = await session.execute(
+        select(TelemetryEvent)
+        .order_by(TelemetryEvent.timestamp.desc())
+        .limit(limit)
+    )
+    events = list(result.scalars().all())
+
+    return {
+        "count": len(events),
+        "events": [_event_payload(event) for event in events],
+    }
 
 
 @router.post(
@@ -116,17 +158,7 @@ async def ingest_event(
 
     await broadcaster.publish({
         "type": "telemetry",
-        "event": {
-            "event_id": saved_event.event_id,
-            "timestamp": saved_event.timestamp,
-            "event_type": saved_event.event_type,
-            "asset_id": saved_event.asset_id,
-            "process_id": saved_event.process_id,
-            "register_address": saved_event.register_address,
-            "value": saved_event.value,
-            "unit": saved_event.unit,
-            "severity": saved_event.severity,
-        },
+        "event": _event_payload(saved_event),
         "detections": response["detections"],
         "correlations": response["correlations"],
     })
