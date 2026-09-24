@@ -6,7 +6,7 @@ const geist = Geist({ variable: "--font-geist", subsets: ["latin"], display: "sw
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: { default: "PermiSense — Cyber-Physical Incident Intelligence", template: "%s | PermiSense" },
   description: "Detect industrial threats, trace cyber-to-process impact, explain the evidence, and guide human-approved response.",
   applicationName: "PermiSense",
