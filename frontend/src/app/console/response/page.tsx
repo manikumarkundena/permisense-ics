@@ -7,6 +7,15 @@ import { api } from "@/lib/api";
 import { useLiveEvents } from "@/hooks/use-live-events";
 import type { Incident, RecoveryResult, ResponseExecution, ResponsePlan } from "@/types/industrial";
 
+function incidentTitle(incident: Incident) {
+  const register = Number(incident.control?.register_address);
+  if (register === 40002) return "Unauthorized operating mode change";
+  if (register === 40003) return "Unauthorized speed setpoint change";
+  if (register === 40004) return "Unauthorized acceleration limit change";
+  if (register === 40005) return "Unauthorized production target change";
+  return incident.title || "Industrial control incident";
+}
+
 export default function ResponsePage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [plan, setPlan] = useState<ResponsePlan | null>(null);
@@ -105,14 +114,8 @@ export default function ResponsePage() {
       await loadPlan(incident.incident_id);
       setMessage(
         result.recovered
-          ? "Recovery verified · control readback " +
-            result.control_value.toFixed(1) +
-            " = target " +
-            result.target_value.toFixed(1)
-          : "Recovery not verified · control readback " +
-            result.control_value.toFixed(1) +
-            " ≠ target " +
-            result.target_value.toFixed(1),
+          ? "Recovery verified · control R" + String(rec?.register_address ?? "") + " readback " + result.control_value.toFixed(1) + " · process " + (result.process_value == null ? "verified" : String(result.process_value))
+          : "Recovery pending · control readback " + result.control_value.toFixed(1) + " · process " + (result.process_value == null ? "not verified" : String(result.process_value)),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Verification failed");
@@ -149,7 +152,7 @@ export default function ResponsePage() {
                 onClick={() => setSelectedIncidentId(item.incident_id)}
               >
                 <span>{item.incident_id.slice(0, 8)}</span>
-                <strong>{item.title}</strong>
+                <strong>{incidentTitle(item)}</strong>
                 <small>{item.asset_id} · {item.status ?? "open"}</small>
               </button>
             ))}
