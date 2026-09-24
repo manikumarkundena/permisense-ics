@@ -781,3 +781,14 @@ button { font: inherit; }
 }
 
 .copilot-workspace{max-width:980px}.copilot-command{padding:22px;margin-bottom:9px}.copilot-evidence-strip{display:flex;gap:7px;margin:20px 0}.copilot-evidence-strip span{padding:6px 8px;border:1px solid var(--line);border-radius:6px;color:var(--muted);font:8px var(--font-geist-mono)}.grounded-banner{display:flex;align-items:center;gap:8px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--ok) 35%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--ok) 5%,var(--surface));color:var(--ok);font-size:9px}.grounded-banner span{color:var(--muted)}.copilot-answer{padding:22px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:9px}.copilot-answer>span{color:var(--subtle);font:800 8px var(--font-geist-mono);letter-spacing:.1em}.copilot-answer h2{margin:9px 0 0;font-size:18px;line-height:1.35;letter-spacing:-.02em}.copilot-answer p{margin:10px 0 0;color:var(--muted);font-size:11px;line-height:1.7}.copilot-answer-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.copilot-answer-grid .copilot-answer{min-height:150px}
+
+
+.response-incident-selector{margin:0 0 12px;padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.response-incident-selector>div:first-child{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:12px}
+.response-incident-selector>div:first-child span{color:var(--subtle);font:8px var(--font-geist-mono);letter-spacing:.08em}
+.response-incident-selector>div:first-child strong{font-size:10px}
+.response-incident-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.response-incident-list button{appearance:none;text-align:left;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:11px;cursor:pointer;color:var(--text)}
+.response-incident-list button.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.response-incident-list span,.response-incident-list small{display:block;color:var(--muted);font:8px var(--font-geist-mono)}
+.response-incident-list strong{display:block;margin:6px 0;font-size:10px}
