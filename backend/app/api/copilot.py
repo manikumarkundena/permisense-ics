@@ -39,31 +39,48 @@ async def generate(prompt: str) -> dict:
     if not settings.gemini_api_key:
         raise HTTPException(status_code=503, detail="Gemini API key is not configured")
 
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        "gemini-3.8-flash:generateContent"
-    )
+    models = ["gemini-3.8-flash", "gemini-3.7-flash"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"responseMimeType": "application/json"},
     }
 
+    last_response = None
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                url,
-                params={"key": settings.gemini_api_key},
-                json=payload,
-            )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail="Gemini upstream request failed. Check network access and Gemini availability.") from exc
+            for model in models:
+                url = (
+                    "https://generativelanguage.googleapis.com/v1beta/models/"
+                    f"{model}:generateContent"
+                )
+                response = await client.post(
+                    url,
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": settings.gemini_api_key,
+                    },
+                    json=payload,
+                )
+                last_response = response
 
-    if response.is_error:
+                if not response.is_error:
+                    break
+
+                if response.status_code != 503:
+                    break
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Gemini upstream request failed. Check network access and Gemini availability.",
+        ) from exc
+
+    if last_response is None or last_response.is_error:
+        response = last_response
         raise HTTPException(
             status_code=502,
             detail={
-                "gemini_status": response.status_code,
-                "gemini_response": response.text[:2000],
+                "gemini_status": response.status_code if response is not None else 502,
+                "gemini_response": response.text[:2000] if response is not None else "No response",
             },
         )
 
