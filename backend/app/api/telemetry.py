@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.correlation.repository import (
     correlation_already_exists,
     find_recent_control_events,
+    get_detection_details_for_events,
     get_detection_ids_for_events,
     save_correlation,
 )
@@ -30,10 +31,8 @@ async def ingest_event(
     event: PermiSenseEvent,
     session: AsyncSession = Depends(get_db),
 ):
-    # 1. Save canonical telemetry event.
     saved_event = await save_event(session, event)
 
-    # 2. Run deterministic detection and persist every match.
     detection_results = evaluate_event(event)
     saved_detections = []
 
@@ -44,7 +43,6 @@ async def ingest_event(
         )
         saved_detections.append(saved_detection)
 
-    # 3. Correlate process telemetry with recent control events.
     correlations = []
 
     if saved_event.event_type == "sensor_update":
@@ -60,9 +58,6 @@ async def ingest_event(
             ):
                 continue
 
-            # The two event IDs are known before correlation is evaluated,
-            # so their persisted detection IDs can be included in the
-            # evidence graph on the first and only evaluation.
             candidate_event_ids = [
                 control_event.event_id,
                 saved_event.event_id,
@@ -71,11 +66,16 @@ async def ingest_event(
                 session,
                 candidate_event_ids,
             )
+            detection_details = await get_detection_details_for_events(
+                session,
+                candidate_event_ids,
+            )
 
             correlation_result = evaluate_correlation(
                 control_event,
                 [saved_event],
                 detection_ids=detection_ids,
+                detection_details=detection_details,
             )
 
             if correlation_result is None:
