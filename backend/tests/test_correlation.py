@@ -151,3 +151,38 @@ def test_unrelated_asset_does_not_correlate():
     )
 
     assert result is None
+
+
+def test_operating_mode_change_correlates_with_process_stop():
+    start = datetime.now(timezone.utc)
+
+    control_event = make_event(
+        "evt-control-mode-001",
+        start,
+        "control_write",
+        40002,
+        0,
+    )
+    control_event.previous_value = 1
+
+    process_event = make_event(
+        "evt-process-stop-001",
+        start + timedelta(seconds=3),
+        "sensor_update",
+        30007,
+        0,
+    )
+
+    result = evaluate_correlation(
+        control_event,
+        [process_event],
+    )
+
+    assert result is not None
+    assert result.impact is not None
+    assert result.impact["impact_type"] == "process_stopped"
+    assert "operating mode" in result.title.lower()
+    assert any(
+        mapping["technique_id"] == "T0858"
+        for mapping in result.mitre_mappings
+    )
