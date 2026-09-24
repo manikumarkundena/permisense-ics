@@ -25,7 +25,7 @@ PLC_HOST = "127.0.0.1"
 PLC_PORT = 5020
 PLC_DEVICE_ID = 1
 
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
 
 POLL_INTERVAL = 1.0
 
