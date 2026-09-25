@@ -30,6 +30,8 @@ def _incident(c: Correlation) -> dict:
         "response": evidence.get("response", {}),
         "control": evidence.get("control", {}),
         "process_events": evidence.get("process_events", []),
+        "correlation": evidence.get("correlation"),
+        "window_seconds": evidence.get("window_seconds"),
     }
 
 
