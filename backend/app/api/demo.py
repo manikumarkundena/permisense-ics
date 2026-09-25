@@ -191,6 +191,14 @@ async def demo_status():
                 "workpieces": process[30005],
                 "jam": process[30006],
                 "state": process[30007],
+                "state_label": {
+                    0: "STOPPED",
+                    1: "STARTING",
+                    2: "RUNNING",
+                    3: "DEGRADED",
+                    4: "JAMMED",
+                    5: "FAULT",
+                }.get(int(process[30007]), f"STATE_{int(process[30007])}"),
             },
             "controls": {
                 "motor_enable": holding[40001],
