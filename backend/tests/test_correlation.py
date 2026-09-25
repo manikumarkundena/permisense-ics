@@ -95,8 +95,17 @@ def test_control_write_correlates_with_process_deviation():
     assert result.impact["title"] == "Conveyor overspeed"
 
     assert result.risk is not None
-    assert result.risk["level"] == "critical"
-    assert result.risk["score"] == 100
+    assert result.risk["level"] == "high"
+    assert result.risk["score"] == 82
+    assert {factor["name"] for factor in result.risk["factors"]} == {
+        "severity_base",
+        "control_manipulation",
+        "process_impact",
+        "deviation_magnitude",
+        "temporal_correlation",
+    }
+
+    assert result.evidence["correlation"]["time_delta_ms"] == 5000.0
 
     graph = result.evidence_graph
     assert graph is not None
@@ -182,6 +191,9 @@ def test_operating_mode_change_correlates_with_process_stop():
     assert result.impact is not None
     assert result.impact["impact_type"] == "process_stopped"
     assert "operating mode" in result.title.lower()
+    assert result.evidence["correlation"]["time_delta_ms"] == 3000.0
+    assert result.risk["score"] == 90
+    assert result.risk["level"] == "critical"
     assert any(
         mapping["technique_id"] == "T0858"
         for mapping in result.mitre_mappings
