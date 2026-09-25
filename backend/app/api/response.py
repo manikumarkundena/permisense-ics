@@ -407,9 +407,13 @@ async def verify_recovery(
     return {
         "incident_id": incident_id,
         "recovered": recovered,
+        "control_register": register_address,
         "control_value": control_value,
         "target_value": target,
         "process_register": playbook.verification_register,
         "process_value": process_value,
+        "verification_type": playbook.verification_type,
+        "verification_threshold": _verification_threshold(playbook),
+        "verified_at": response["recovery_checked_at"],
         "status": "recovered" if recovered else "awaiting_recovery",
     }
