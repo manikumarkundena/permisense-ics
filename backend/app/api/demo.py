@@ -323,7 +323,7 @@ async def reset_demo():
         return {
             "success": True,
             "execution": "real_modbus_tcp",
-            "description": "Restored the documented clean demo baseline: R40002=RUN/Auto and R40003=50 RPM.",
+            "description": "Restored the documented clean demo baseline: R40002=RUN/Auto and R40003=50%.",
             "previous": previous,
             "restored": restored,
             "process_snapshot": process,
