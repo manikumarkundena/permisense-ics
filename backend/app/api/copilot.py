@@ -83,6 +83,7 @@ async def generate(prompt: str) -> dict:
                         parsed = json.loads(text)
                         if not isinstance(parsed, dict):
                             raise ValueError("Gemini returned JSON that is not an object")
+                        parsed.setdefault("model", model)
                         return parsed
                     except (KeyError, IndexError, TypeError, json.JSONDecodeError, ValueError) as exc:
                         failures.append(f"{model}: invalid structured response: {exc}")
