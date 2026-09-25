@@ -14,5 +14,5 @@ class RiskAssessment(BaseModel):
     risk_id: str
     level: RiskLevel
     score: int = Field(ge=0, le=100)
-    factors: dict
+    factors: list[dict]
     rationale: str
