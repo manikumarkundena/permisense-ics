@@ -1,147 +1,76 @@
 # PermiSense Deployment
 
-## Production topology
+## Current hackathon topology
 
-The recommended hackathon deployment is:
+The current deployed topology is intentionally split so frontend changes do not require backend redeployment:
 
-- Railway PostgreSQL: managed database
-- Railway backend service: Docker container
-- Virtual PLC + process simulator + Modbus gateway: run inside the backend container for the self-contained virtual industrial lab
-- Next.js frontend: separate deployment (Vercel or another Next.js host)
+```text
+Browser
+  │
+  ├── HTTPS / WebSocket
+  ▼
+Vercel — Next.js frontend
+  │
+  │ REST / WebSocket
+  ▼
+Render — FastAPI backend
+  │
+  ├── PostgreSQL
+  └── Virtual PLC / process simulator
+       └── Modbus/TCP :5020
+```
 
 The browser never connects directly to PostgreSQL or the PLC.
 
-Browser
-  -> HTTPS / WebSocket
-FastAPI
-  -> PostgreSQL
-  -> Virtual PLC
-  -> Modbus gateway
+## Backend environment
 
-## Railway database
+Required server-side variables:
 
-Create a PostgreSQL database in the same Railway project as the backend.
-
-Railway exposes DATABASE_URL to services in the project. Set the backend service variable:
-
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-
-The application uses SQLAlchemy + asyncpg and Alembic migrations.
-
-## Backend service
-
-Deploy the repository/branch containing the root Dockerfile.
-
-The container starts:
-
-1. Alembic migrations
-2. FastAPI
-3. Virtual PLC
-4. Modbus telemetry gateway
-
-Required variables:
-
+```env
 ENVIRONMENT=production
 DEBUG=false
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-CORS_ORIGINS=https://<frontend-domain>
+DATABASE_URL=<managed PostgreSQL URL>
+CORS_ORIGINS=https://permisense-ics-frontend.vercel.app
 MODBUS_HOST=127.0.0.1
 MODBUS_PORT=5020
 GEMINI_API_KEY=<optional>
+```
 
-Railway injects PORT automatically. The container uses PORT for FastAPI and binds to 0.0.0.0.
+Do not put DATABASE_URL or GEMINI_API_KEY in the frontend.
 
-Health check:
+## Frontend environment
 
-/api/health
+```env
+NEXT_PUBLIC_API_URL=https://permisense-api.onrender.com
+NEXT_PUBLIC_WS_URL=wss://permisense-api.onrender.com/ws/events
+```
 
-Public API domain example:
+## Health checks
 
-https://<permisense-api>.up.railway.app
+- GET /api/health
+- GET /api/system/status
+- GET /api/demo/status
+- WebSocket /ws/events
 
-## WebSocket
+## Demo sequence
 
-The actual backend WebSocket endpoint is:
+1. Restore the controlled baseline.
+2. Trigger the overspeed or mode scenario.
+3. Observe the real Modbus/TCP control change.
+4. Observe process telemetry.
+5. Confirm detection and cyber-physical correlation.
+6. Inspect the persisted incident and evidence-derived risk.
+7. Approve the recommended response.
+8. Verify PLC readback and process recovery.
 
-/ws/events
+## Deployment isolation
 
-Development:
+The backend Dockerfile copies only:
 
-ws://127.0.0.1:8000/ws/events
+- backend/
+- industrial_lab/
+- scripts/
 
-Production:
+The frontend lives under frontend/ and is not copied into the backend image. Therefore consolidating the frontend source into the repository does not change the backend container contents.
 
-wss://<permisense-api>.up.railway.app/ws/events
-
-The frontend constructs this from NEXT_PUBLIC_API_URL.
-
-## Frontend
-
-Set:
-
-NEXT_PUBLIC_API_URL=https://<permisense-api>.up.railway.app
-
-Do not expose:
-
-- DATABASE_URL
-- GEMINI_API_KEY
-- PostgreSQL credentials
-- PLC credentials
-
-The frontend only calls FastAPI.
-
-## Demo Lab
-
-Allowlisted scenario endpoints:
-
-POST /api/demo/scenarios/speed
-POST /api/demo/scenarios/mode
-GET  /api/demo/status
-
-Scenario execution is real Modbus/TCP against the virtual PLC. The frontend does not fabricate security events.
-
-Speed scenario:
-
-R40003: safe baseline -> 90.0
-
-Mode scenario:
-
-R40002: RUN -> STOP
-
-The mode scenario requires a clean speed baseline (R40003 <= 80) so the recovery demonstration is deterministic.
-
-## Database migrations
-
-Local:
-
-cd backend
-alembic upgrade head
-
-Production:
-
-The container startup runs:
-
-python -m alembic upgrade head
-
-Do not manually recreate tables in production.
-
-## Production verification
-
-After deployment:
-
-1. GET /api/health
-2. GET /api/system/status
-3. GET /api/demo/status
-4. Verify telemetry is arriving
-5. Open WebSocket /ws/events
-6. Trigger speed scenario
-7. Confirm CONTROL_WRITE detection
-8. Confirm incident correlation
-9. Approve the response
-10. Verify recovery from process telemetry
-
-## Important limitation
-
-The production industrial lab is a protocol-real virtual environment, not a physical plant.
-
-The Virtual PLC, process simulator, and gateway are intentionally packaged with the backend service so the hackathon demonstration remains self-contained.
+The currently deployed backend branch remains deployment-v2. The full-stack submission branch is separate until explicitly merged.
