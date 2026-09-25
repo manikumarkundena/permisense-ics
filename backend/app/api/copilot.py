@@ -37,15 +37,23 @@ def evidence_payload(incident: Correlation) -> dict:
 
 async def generate(prompt: str) -> dict:
     if not settings.gemini_api_key:
-        raise HTTPException(status_code=503, detail="Gemini API key is not configured")
+        raise HTTPException(
+            status_code=503,
+            detail="Gemini API key is not configured on the backend.",
+        )
 
-    models = ["gemini-3.8-flash", "gemini-3.7-flash"]
+    # Keep a stable production model first, then fall back to the current
+    # GA Flash model if the account/model availability differs.
+    models = ["gemini-2.5-flash", "gemini-3.8-flash"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"responseMimeType": "application/json"},
+        "generationConfig": {
+            "responseMimeType": "application/json",
+        },
     }
 
-    last_response = None
+    failures: list[str] = []
+
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             for model in models:
@@ -53,46 +61,48 @@ async def generate(prompt: str) -> dict:
                     "https://generativelanguage.googleapis.com/v1beta/models/"
                     f"{model}:generateContent"
                 )
-                response = await client.post(
-                    url,
-                    headers={
-                        "Content-Type": "application/json",
-                        "x-goog-api-key": settings.gemini_api_key,
-                    },
-                    json=payload,
-                )
-                last_response = response
 
-                if not response.is_error:
+                try:
+                    response = await client.post(
+                        url,
+                        headers={
+                            "Content-Type": "application/json",
+                            "x-goog-api-key": settings.gemini_api_key,
+                        },
+                        json=payload,
+                    )
+                except httpx.HTTPError as exc:
+                    failures.append(f"{model}: network error: {exc}")
+                    continue
+
+                if response.is_success:
+                    try:
+                        data = response.json()
+                        text = data["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(text)
+                        if not isinstance(parsed, dict):
+                            raise ValueError("Gemini returned JSON that is not an object")
+                        return parsed
+                    except (KeyError, IndexError, TypeError, json.JSONDecodeError, ValueError) as exc:
+                        failures.append(f"{model}: invalid structured response: {exc}")
+                        continue
+
+                body = response.text[:2000]
+                failures.append(f"{model}: HTTP {response.status_code}: {body}")
+
+                # Retry another configured model for availability, rate-limit,
+                # authentication/access, and upstream failures. A second model
+                # can be available even when the first is not enabled for the key.
+                if response.status_code not in {400, 401, 403, 404, 408, 429, 500, 502, 503, 504}:
                     break
 
-                if response.status_code != 503:
-                    break
     except httpx.HTTPError as exc:
-        raise HTTPException(
-            status_code=502,
-            detail="Gemini upstream request failed. Check network access and Gemini availability.",
-        ) from exc
+        failures.append(f"Gemini transport error: {exc}")
 
-    if last_response is None or last_response.is_error:
-        response = last_response
-        raise HTTPException(
-            status_code=502,
-            detail={
-                "gemini_status": response.status_code if response is not None else 502,
-                "gemini_response": response.text[:2000] if response is not None else "No response",
-            },
-        )
-
-    try:
-        data = response.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text)
-    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Invalid structured response from Gemini: {exc}",
-        ) from exc
+    raise HTTPException(
+        status_code=502,
+        detail="Gemini Copilot generation failed. " + " | ".join(failures),
+    )
 
 
 @router.post("/{incident_id}/copilot")
