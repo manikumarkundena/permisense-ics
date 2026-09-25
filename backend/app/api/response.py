@@ -134,7 +134,7 @@ def _decode_process_value(register_address: int, raw: int) -> float | int:
 
 def _verification_threshold(playbook) -> str:
     if playbook.verification_type in {"speed", "load"}:
-        return "<= 80"
+        return "<= 80 percent"
     if playbook.verification_type == "jam":
         return "== 0 (no jam)"
     if playbook.verification_type == "process_state":
