@@ -1,14 +1,12 @@
 """
 PermiSense Virtual PLC - Modbus/TCP Server
 
-Runs the protocol-facing virtual PLC.
-
-The VirtualPLC owns the authoritative PLCState.
-The process runtime operates on the same state.
+Runs the protocol-facing virtual PLC and the manufacturing process runtime.
 """
 
 import asyncio
 import logging
+import os
 from functools import partial
 
 from pymodbus.server import StartAsyncTcpServer
@@ -27,24 +25,11 @@ logging.basicConfig(
 
 logger = logging.getLogger("permisense.plc")
 
-
-HOST = "127.0.0.1"
-PORT = 5020
+HOST = os.getenv("MODBUS_HOST", "127.0.0.1")
+PORT = int(os.getenv("MODBUS_PORT", "5020"))
 
 
 def build_device(plc: VirtualPLC) -> SimDevice:
-    """
-    Construct the virtual PLC register space.
-
-    Holding registers:
-        offsets 0-5  -> 40001-40006
-        offsets 6-8  -> reserved
-        offsets 9-12 -> 40010-40013
-
-    Input registers:
-        offsets 0-6 -> 30001-30007
-    """
-
     holding_registers = [
         SimData(
             address=0,
@@ -104,31 +89,15 @@ def build_device(plc: VirtualPLC) -> SimDevice:
 
 
 async def run_server() -> None:
-    """Start the virtual PLC and process runtime."""
-
     plc = VirtualPLC()
-
-    process_runtime = ProcessRuntime(
-        plc=plc,
-        tick_seconds=0.1,
-    )
+    process_runtime = ProcessRuntime(plc=plc, tick_seconds=0.1)
 
     logger.info("Starting PermiSense Virtual PLC")
-    logger.info(
-        "Modbus/TCP endpoint: %s:%s",
-        HOST,
-        PORT,
-    )
-    logger.info(
-        "Initial SPEED_SETPOINT: %.1f%%",
-        plc.state.speed_setpoint,
-    )
+    logger.info("Modbus/TCP endpoint: %s:%s", HOST, PORT)
+    logger.info("Initial SPEED_SETPOINT: %.1f%%", plc.state.speed_setpoint)
 
     device = build_device(plc)
-
-    process_task = asyncio.create_task(
-        process_runtime.run()
-    )
+    process_task = asyncio.create_task(process_runtime.run())
 
     try:
         await StartAsyncTcpServer(

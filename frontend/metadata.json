@@ -1,0 +1,6 @@
+{
+  "name": "PermiSense",
+  "description": "Cyber-Physical Incident Intelligence & Response for Industrial Control Systems. Detect the threat. Trace the impact. Decide the response.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

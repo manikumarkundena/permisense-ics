@@ -33,6 +33,30 @@ REGISTER_MAPPINGS = {
         "tactic": "Impact",
         "basis": "The event changes a process-control production target.",
     },
+    40010: {
+        "technique_id": "T0838",
+        "technique_name": "Modify Alarm Settings",
+        "tactic": "Impair Process Control",
+        "basis": "The event changes the virtual-cell overspeed alarm threshold.",
+    },
+    40011: {
+        "technique_id": "T0838",
+        "technique_name": "Modify Alarm Settings",
+        "tactic": "Impair Process Control",
+        "basis": "The event changes the virtual-cell high-load alarm threshold.",
+    },
+    40012: {
+        "technique_id": "T0838",
+        "technique_name": "Modify Alarm Settings",
+        "tactic": "Impair Process Control",
+        "basis": "The event changes the virtual-cell jam timeout configuration.",
+    },
+    40013: {
+        "technique_id": "T0836",
+        "technique_name": "Modify Parameter",
+        "tactic": "Impair Process Control",
+        "basis": "The event changes a PLC configuration parameter.",
+    },
 }
 
 
