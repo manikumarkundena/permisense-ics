@@ -39,6 +39,12 @@ def evaluate_correlation(
         *[event.event_id for event in process_events],
     ]
 
+    # Use the earliest correlated process event for the evidence-grade delay.
+    first_process_event = min(process_events, key=lambda event: event.timestamp)
+    correlation_seconds = (
+        first_process_event.timestamp - control_event.timestamp
+    ).total_seconds()
+
     mitre_mappings = get_mitre_mappings(
         "ICS-CONTROL-WRITE",
         control_event.register_address,
@@ -51,12 +57,29 @@ def evaluate_correlation(
     )
     impact_dict = impact.model_dump(mode="json") if impact else None
 
+    impact_evidence = (impact_dict or {}).get("evidence", {})
+    process_value = impact_evidence.get("value")
+    process_threshold = impact_evidence.get("threshold")
+    impact_type = impact_dict.get("impact_type") if impact_dict else None
+
     risk = assess_operational_risk(
         severity=Severity.HIGH,
         control_manipulation=True,
         process_impact=impact is not None,
+        process_value=float(process_value) if process_value is not None else None,
+        process_threshold=(
+            float(process_threshold) if process_threshold is not None else None
+        ),
+        impact_type=impact_type,
+        correlation_seconds=correlation_seconds,
     )
     risk_dict = risk.model_dump(mode="json")
+
+    correlation_dict = {
+        "time_delta_ms": round(correlation_seconds * 1000, 2),
+        "window_seconds": 30,
+        "matched_process_event_id": first_process_event.event_id,
+    }
 
     graph = build_evidence_graph(
         control_event_id=control_event.event_id,
@@ -98,6 +121,7 @@ def evaluate_correlation(
         "impact": impact_dict,
         "risk": risk_dict,
         "evidence_graph": graph_dict,
+        "correlation": correlation_dict,
         "window_seconds": 30,
     }
 
@@ -112,7 +136,7 @@ def evaluate_correlation(
             f"A change to the PLC {label} "
             f"({control_event.previous_value} → {control_event.value}) "
             f"was followed by {impact_title.lower()} on the same asset "
-            "within 30 seconds."
+            f"{correlation_seconds:.2f} seconds later."
         ),
         event_ids=event_ids,
         detection_ids=detection_ids or [],
