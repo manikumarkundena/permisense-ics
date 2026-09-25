@@ -59,6 +59,40 @@ PROCESS_SCALES = {
     30007: 1.0,
 }
 
+REGISTER_LABELS = {
+    40001: "Motor enable",
+    40002: "Operating mode",
+    40003: "Speed setpoint",
+    40004: "Acceleration limit",
+    40005: "Production target",
+    40010: "Overspeed limit",
+    40011: "High-load limit",
+    40012: "Jam timeout",
+    40013: "Configuration version",
+}
+
+REGISTER_UNITS = {
+    40001: "",
+    40002: "",
+    40003: "RPM",
+    40004: "RPM/s",
+    40005: "units",
+    40010: "RPM",
+    40011: "%",
+    40012: "s",
+    40013: "",
+}
+
+PROCESS_LABELS = {
+    30001: "Actual speed",
+    30002: "Motor current",
+    30003: "Motor load",
+    30004: "Position",
+    30005: "Workpieces",
+    30006: "Jam state",
+    30007: "Process state",
+}
+
 PLC_DEVICE_ID = 1
 
 
@@ -98,6 +132,27 @@ def _decode_process_value(register_address: int, raw: int) -> float | int:
     return raw * scale
 
 
+def _verification_threshold(playbook) -> str:
+    if playbook.verification_type in {"speed", "load"}:
+        return "<= 80"
+    if playbook.verification_type == "jam":
+        return "== 0 (no jam)"
+    if playbook.verification_type == "process_state":
+        return "0 or 2 (stopped/idle)"
+    return "control readback matches approved target"
+
+
+def _response_states(response: dict) -> tuple[str, str, str]:
+    approved = bool(response.get("approved"))
+    executed = bool(response.get("executed"))
+    recovered = bool(response.get("recovered"))
+
+    approval_state = "APPROVED" if approved else "PENDING"
+    execution_state = "EXECUTED" if executed else "PENDING"
+    recovery_state = "RECOVERED" if recovered else ("VERIFYING" if executed else "UNRECOVERED")
+    return approval_state, execution_state, recovery_state
+
+
 @router.get("/{incident_id}/response")
 async def response_plan(
     incident_id: str,
@@ -132,22 +187,38 @@ async def response_plan(
             "recovered": False,
         }
 
+    approval_state, execution_state, recovery_state = _response_states(response)
+    recommendation = {
+        "action": playbook.action,
+        "description": playbook.description,
+        "register_address": playbook.register_address,
+        "register_name": REGISTER_LABELS.get(playbook.register_address, f"R{playbook.register_address}"),
+        "current_value": control.get("new_value"),
+        "target_value": target,
+        "unit": REGISTER_UNITS.get(playbook.register_address, ""),
+        "requires_human_approval": True,
+        "verification_register": playbook.verification_register,
+        "verification_register_name": (
+            PROCESS_LABELS.get(playbook.verification_register)
+            if playbook.verification_register is not None
+            else None
+        ),
+        "verification_type": playbook.verification_type,
+        "verification_threshold": _verification_threshold(playbook),
+    }
+
     return {
         "incident_id": incident_id,
-        "recommendations": [
-            {
-                "action": playbook.action,
-                "description": playbook.description,
-                "register_address": playbook.register_address,
-                "current_value": control.get("new_value"),
-                "target_value": target,
-                "requires_human_approval": True,
-                "verification_register": playbook.verification_register,
-            }
-        ],
+        "recommendations": [recommendation],
         "approved": response.get("approved", False),
+        "approved_by": response.get("approved_by"),
+        "approved_at": response.get("approved_at"),
         "executed": response.get("executed", False),
+        "executed_at": response.get("executed_at"),
         "recovered": response.get("recovered", False),
+        "approval_state": approval_state,
+        "execution_state": execution_state,
+        "recovery_state": recovery_state,
     }
 
 
@@ -230,6 +301,7 @@ async def approve_response(
         "approved": True,
         "approved_by": payload.approved_by.strip(),
         "approved_at": now,
+        "executed_at": now,
         "executed": True,
         "execution_id": str(uuid4()),
         "target_register": register_address,
