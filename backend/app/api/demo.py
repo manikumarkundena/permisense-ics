@@ -258,3 +258,67 @@ async def trigger_mode_scenario():
         "description": "Real Modbus/TCP write to operating mode R40002: RUN → STOP.",
         "result": _write_control(40002, 0),
     }
+
+
+@router.post("/reset")
+async def reset_demo():
+    """Restore the virtual PLC to the documented clean demo baseline.
+
+    This is a real Modbus/TCP operation, not a frontend-only state reset.
+    """
+    client = _client()
+
+    if not client.connect():
+        raise HTTPException(status_code=503, detail="Virtual PLC is unavailable")
+
+    baseline = {
+        40002: 1.0,   # RUN / Auto
+        40003: 50.0,  # safe speed setpoint
+    }
+
+    try:
+        holding, _ = _read_registers(client)
+        previous = {
+            str(register): holding.get(register)
+            for register in baseline
+        }
+
+        for register_address, target_value in baseline.items():
+            if abs(float(holding[register_address]) - target_value) > 1e-6:
+                result = client.write_register(
+                    address=CONTROL_OFFSETS[register_address],
+                    value=int(round(target_value * CONTROL_SCALES[register_address])),
+                    device_id=PLC_DEVICE_ID,
+                )
+                if result.isError():
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Virtual PLC rejected baseline restore for R{register_address}",
+                    )
+
+        readback, process = _read_registers(client)
+        restored = {
+            str(register): readback[register]
+            for register in baseline
+        }
+
+        if any(
+            abs(float(restored[str(register)]) - float(target))
+            > 1e-6
+            for register, target in baseline.items()
+        ):
+            raise HTTPException(
+                status_code=502,
+                detail="Virtual PLC baseline restore did not read back to the approved targets",
+            )
+
+        return {
+            "success": True,
+            "execution": "real_modbus_tcp",
+            "description": "Restored the documented clean demo baseline: R40002=RUN/Auto and R40003=50 RPM.",
+            "previous": previous,
+            "restored": restored,
+            "process_snapshot": process,
+        }
+    finally:
+        client.close()
