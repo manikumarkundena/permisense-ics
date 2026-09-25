@@ -32,6 +32,7 @@ def evidence_payload(incident: Correlation) -> dict:
         "control": evidence.get("control"),
         "process_events": evidence.get("process_events", []),
         "response": evidence.get("response", {}),
+        "correlation": evidence.get("correlation"),
     }
 
 
@@ -42,9 +43,9 @@ async def generate(prompt: str) -> dict:
             detail="Gemini API key is not configured on the backend.",
         )
 
-    # Keep a stable production model first, then fall back to the current
-    # GA Flash model if the account/model availability differs.
-    models = ["gemini-2.5-flash", "gemini-3.8-flash"]
+    # Use current stable models for new Gemini API projects. Google currently
+    # recommends 3.8 Flash or 3.5 Flash-Lite instead of 2.5 for new projects.
+    models = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -90,9 +91,6 @@ async def generate(prompt: str) -> dict:
                 body = response.text[:2000]
                 failures.append(f"{model}: HTTP {response.status_code}: {body}")
 
-                # Retry another configured model for availability, rate-limit,
-                # authentication/access, and upstream failures. A second model
-                # can be available even when the first is not enabled for the key.
                 if response.status_code not in {400, 401, 403, 404, 408, 429, 500, 502, 503, 504}:
                     break
 
